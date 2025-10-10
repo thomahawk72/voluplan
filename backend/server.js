@@ -12,6 +12,11 @@ validateEnv();
 
 const app = express();
 
+// Trust proxy for Heroku
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 // Middleware
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',

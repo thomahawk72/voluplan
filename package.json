@@ -1,0 +1,31 @@
+{
+  "name": "voluplan",
+  "version": "1.0.0",
+  "description": "Volunteer Planning System",
+  "engines": {
+    "node": ">=18.x"
+  },
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm start",
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "test": "cd backend && npm test",
+    "test:watch": "cd backend && npm run test:watch",
+    "build": "cd frontend && npm run build",
+    "start": "cd backend && npm start",
+    "heroku-postbuild": "cd backend && npm install && cd ../frontend && npm install && npm run build"
+  },
+  "keywords": [
+    "volunteer",
+    "planning",
+    "scheduling"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
+
+

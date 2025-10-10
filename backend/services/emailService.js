@@ -1,6 +1,13 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
+// Check if email is configured with real values (not placeholders)
+const isEmailConfigured = 
+  process.env.EMAIL_USER && 
+  process.env.EMAIL_PASSWORD &&
+  !process.env.EMAIL_USER.includes('your_email') &&
+  !process.env.EMAIL_PASSWORD.includes('your_');
+
 // Create transporter
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
@@ -12,14 +19,19 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// Verify transporter configuration
-transporter.verify((error, success) => {
-  if (error) {
-    console.error('Email transporter error:', error);
-  } else {
-    console.log('Email server is ready to send messages');
-  }
-});
+// Only verify transporter if email is properly configured
+if (isEmailConfigured) {
+  transporter.verify((error, success) => {
+    if (error) {
+      console.error('⚠️  Email transporter error:', error);
+    } else {
+      console.log('✅ Email server is ready to send messages');
+    }
+  });
+} else {
+  console.log('⚠️  Email not configured - password reset functionality will not work');
+  console.log('   To enable: Update EMAIL_USER and EMAIL_PASSWORD in .env');
+}
 
 /**
  * Send password reset email
@@ -89,17 +101,24 @@ const sendPasswordResetEmail = async (email, resetToken, firstName) => {
     `,
   };
 
+  // Check if email is configured before sending
+  if (!isEmailConfigured) {
+    console.error('Cannot send email - email service not configured');
+    throw new Error('Email service not configured. Please set EMAIL_USER and EMAIL_PASSWORD in .env');
+  }
+
   try {
     await transporter.sendMail(mailOptions);
-    console.log(`Password reset email sent to ${email}`);
+    console.log(`✅ Password reset email sent to ${email}`);
     return true;
   } catch (error) {
-    console.error('Error sending password reset email:', error);
+    console.error('❌ Error sending password reset email:', error);
     throw error;
   }
 };
 
 module.exports = {
   sendPasswordResetEmail,
+  isEmailConfigured,
 };
 

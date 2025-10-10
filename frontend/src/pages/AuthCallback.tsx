@@ -11,12 +11,10 @@ const AuthCallback: React.FC = () => {
     const token = searchParams.get('token');
 
     if (token) {
-      localStorage.setItem('token', token);
-      
-      // Get user info
+      // Token is set as httpOnly cookie by backend during OAuth callback
+      // Just verify authentication and redirect
       authAPI.getCurrentUser()
-        .then((response) => {
-          localStorage.setItem('user', JSON.stringify(response.user));
+        .then(() => {
           navigate('/dashboard');
         })
         .catch((error) => {

@@ -2,7 +2,13 @@ const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const passport = require('./config/passport');
+const path = require('path');
+const { createGeneralLimiter } = require('./middleware/rateLimiter');
+const { validateEnv } = require('./utils/envValidator');
 require('dotenv').config();
+
+// Validate environment variables on startup
+validateEnv();
 
 const app = express();
 
@@ -16,6 +22,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(passport.initialize());
 
+// Apply general rate limiting to all API routes
+app.use('/api/', createGeneralLimiter());
+
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
@@ -25,6 +34,16 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Serve static files from the React app in production
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '../frontend/build')));
+
+  // Handle React routing, return all requests to React app
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
+  });
+}
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Error:', err);
@@ -33,10 +52,12 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ error: 'Route not found' });
-});
+// 404 handler for API routes only (in development)
+if (process.env.NODE_ENV !== 'production') {
+  app.use((req, res) => {
+    res.status(404).json({ error: 'Route not found' });
+  });
+}
 
 const PORT = process.env.PORT || 5000;
 

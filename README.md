@@ -40,6 +40,34 @@ Et moderne fullstack system for planlegging av frivillige til show og arrangemen
 - React Router
 - Axios
 
+## 🚀 Quick Start
+
+```bash
+# 1. Klon repo
+git clone https://github.com/thomahawk72/voluplan.git
+cd voluplan
+
+# 2. Installer dependencies
+npm run install:all
+
+# 3. Sett opp database
+createdb voluplan
+psql voluplan < backend/schema.sql
+
+# 4. Konfigurer environment
+cd backend && cp .env.example .env
+cd ../frontend && cp .env.example .env
+cd ..
+# Rediger backend/.env med dine verdier
+
+# 5. Start applikasjonen
+npm run dev
+```
+
+Åpne http://localhost:3000 i nettleseren! 🎉
+
+---
+
 ## Kom i gang
 
 ### Forutsetninger
@@ -66,12 +94,17 @@ createdb voluplan
 psql voluplan < backend/schema.sql
 ```
 
-#### 3. Konfigurer backend
+#### 3. Installer alle dependencies
+```bash
+# Fra root-mappen
+npm run install:all
+```
+
+Dette installerer dependencies for root, backend og frontend.
+
+#### 4. Konfigurer backend
 ```bash
 cd backend
-
-# Installer dependencies
-npm install
 
 # Kopier .env.example til .env og fyll inn verdier
 cp .env.example .env
@@ -85,18 +118,29 @@ Rediger `.env` og fyll inn:
 - Facebook OAuth credentials (valgfritt)
 - SMTP e-post innstillinger
 
-#### 4. Konfigurer frontend
+#### 4b. Konfigurer frontend
 ```bash
-cd ../frontend
-
-# Installer dependencies
-npm install
+cd frontend
 
 # Kopier .env.example til .env
 cp .env.example .env
 ```
 
+Standard verdier i frontend `.env` burde fungere for lokal utvikling.
+
+**Merk:** For lokal utvikling kjører backend på port 5001 og frontend på port 3000. 
+I produksjon (Heroku) serverer backend både API og frontend på samme port.
+
 #### 5. Start utviklingsservere
+
+**Metode 1: Start alt med én kommando (anbefalt)**
+```bash
+npm run dev
+```
+
+Dette starter både backend og frontend samtidig!
+
+**Metode 2: Start hver del separat**
 
 Terminal 1 - Backend:
 ```bash
@@ -112,7 +156,30 @@ npm start
 
 Applikasjonen kjører nå på:
 - Frontend: http://localhost:3000
-- Backend: http://localhost:5000
+- Backend: http://localhost:5001
+- Backend health check: http://localhost:5001/health
+
+### Nyttige Kommandoer
+
+```bash
+# Installer alle dependencies (root, backend og frontend)
+npm run install:all
+
+# Start både backend og frontend
+npm run dev
+
+# Kjør tester
+npm test
+
+# Kjør tester i watch mode
+npm run test:watch
+
+# Bygg frontend for produksjon
+npm run build
+
+# Start backend i produksjonsmodus
+npm start
+```
 
 ## Bruk
 
@@ -141,15 +208,132 @@ VALUES (
 2. Opprett et nytt prosjekt
 3. Aktiver Google+ API
 4. Opprett OAuth 2.0 credentials
-5. Legg til authorized redirect URI: `http://localhost:5000/api/auth/google/callback`
+5. Legg til authorized redirect URI: `http://localhost:5001/api/auth/google/callback`
 6. Kopier Client ID og Client Secret til `.env`
 
 #### Facebook OAuth
 1. Gå til [Facebook Developers](https://developers.facebook.com/)
 2. Opprett en ny app
 3. Legg til Facebook Login product
-4. Legg til Valid OAuth Redirect URI: `http://localhost:5000/api/auth/facebook/callback`
+4. Legg til Valid OAuth Redirect URI: `http://localhost:5001/api/auth/facebook/callback`
 5. Kopier App ID og App Secret til `.env`
+
+## Deployment til Heroku
+
+Dette prosjektet er konfigurert for enkel deployment til Heroku. Se [HEROKU_DEPLOYMENT.md](HEROKU_DEPLOYMENT.md) for detaljert guide.
+
+### Quick Deploy
+```bash
+# Opprett Heroku app
+heroku create your-app-name
+
+# Legg til PostgreSQL
+heroku addons:create heroku-postgresql:mini
+
+# Sett environment variables
+heroku config:set NODE_ENV=production
+heroku config:set JWT_SECRET=your_secure_secret
+# ... (se HEROKU_DEPLOYMENT.md for alle variabler)
+
+# Deploy
+git push heroku main
+
+# Initialiser database
+heroku pg:psql < backend/schema.sql
+```
+
+På Heroku:
+- Backend serverer både API og frontend
+- Automatisk bygger frontend via `heroku-postbuild`
+- Kjører på én dynamisk port
+- Frontend bruker relative URL for API-kall
+
+## Database Schema
+
+### Tabeller
+
+**users** - Brukere i systemet
+- Autentisering (e-post/passord, Google OAuth, Facebook OAuth)
+- Roller og kompetansegrupper
+- Personlig informasjon
+
+**kompetansekategori** - Kategorier for kompetanser
+- Navn (unik)
+- Beskrivelse
+- Eksempler: Lyd, Lys, Scene, Video
+
+**kompetanse** - Spesifikke kompetanser
+- Navn
+- Kategori (foreign key til kompetansekategori)
+- Leder (foreign key til users)
+- Beskrivelse
+- Eksempler: FOH Lyd, Lysbord operatør
+
+**password_reset_tokens** - Tokens for passord reset
+- Lenket til bruker
+- Utløpstid
+- Engangsbruk
+
+**produksjonskategori** - Kategorier for produksjoner
+- Navn (unik)
+- Beskrivelse
+- Eksempler: Konsert, Teater, Festival, Konferanse
+
+**produksjonsplan** - Overordnede planer/sesonger
+- Navn
+- Start- og sluttdato
+- Beskrivelse
+- Eksempel: "Høst 2025"
+
+**produksjon** - Konkrete produksjoner/show
+- Navn
+- Tidspunkt
+- Kategori (foreign key til produksjonskategori)
+- Publisert status (boolean)
+- Beskrivelse (lang tekst)
+- Plan (foreign key til produksjonsplan)
+
+**produksjon_bemanning** - Mange-til-mange kobling
+- Kobler produksjon, person og kompetanse
+- En person kan ha flere kompetanser i samme produksjon
+- En person kan være med i flere produksjoner
+- Status (planlagt, bekreftet, etc.)
+- Notater
+- UNIQUE constraint: (produksjon_id, person_id, kompetanse_id)
+
+### Database Relasjoner
+
+```
+users (personer)
+  ↓ 1:N
+kompetanse.leder_id (leder for kompetanse)
+
+kompetansekategori
+  ↓ 1:N
+kompetanse.kategori_id
+
+produksjonskategori
+  ↓ 1:N
+produksjon.kategori_id
+
+produksjonsplan
+  ↓ 1:N
+produksjon.plan_id
+
+Mange-til-mange (via produksjon_bemanning):
+produksjon ←→ users (personer)
+produksjon ←→ kompetanse
+users ←→ kompetanse (innenfor en produksjon)
+```
+
+### Eksempel Queries
+
+Se `backend/example_queries.sql` for nyttige SQL-queries, inkludert:
+- Liste alle personer og kompetanser for en produksjon
+- Liste alle produksjoner en person er satt opp på
+- Statistikk over mest brukte kompetanser
+- Kommende produksjoner
+- Ledige/manglende kompetanser for en produksjon
 
 ## Prosjektstruktur
 
@@ -160,12 +344,22 @@ voluplan/
 │   │   ├── database.js
 │   │   └── passport.js
 │   ├── middleware/
-│   │   └── auth.js
+│   │   ├── auth.js
+│   │   └── rateLimiter.js
+│   ├── migrations/
+│   │   ├── 001_add_kompetanse_tables.sql
+│   │   └── 002_add_produksjon_tables.sql
+│   ├── example_queries.sql
 │   ├── routes/
 │   │   ├── auth.js
 │   │   └── users.js
 │   ├── services/
 │   │   └── emailService.js
+│   ├── utils/
+│   │   ├── envValidator.js
+│   │   ├── errorHandler.js
+│   │   ├── oauthHelpers.js
+│   │   └── userMapper.js
 │   ├── schema.sql
 │   ├── server.js
 │   └── package.json

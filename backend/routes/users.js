@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const { body, validationResult } = require('express-validator');
 const db = require('../config/database');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const { mapUserToResponse, mapUsersToResponse } = require('../utils/userMapper');
 
 /**
  * GET /api/users
@@ -16,16 +17,7 @@ router.get('/', authenticateToken, requireRole(['admin']), async (req, res) => {
     );
 
     res.json({
-      users: result.rows.map(user => ({
-        id: user.id,
-        firstName: user.first_name,
-        lastName: user.last_name,
-        email: user.email,
-        roles: user.roles,
-        competenceGroups: user.competence_groups,
-        isActive: user.is_active,
-        createdAt: user.created_at,
-      })),
+      users: mapUsersToResponse(result.rows),
     });
   } catch (error) {
     console.error('Get users error:', error);
@@ -76,16 +68,7 @@ router.post(
       const user = result.rows[0];
 
       res.status(201).json({
-        user: {
-          id: user.id,
-          firstName: user.first_name,
-          lastName: user.last_name,
-          email: user.email,
-          roles: user.roles,
-          competenceGroups: user.competence_groups,
-          isActive: user.is_active,
-          createdAt: user.created_at,
-        },
+        user: mapUserToResponse(user),
       });
     } catch (error) {
       console.error('Create user error:', error);
@@ -119,16 +102,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
     const user = result.rows[0];
 
     res.json({
-      user: {
-        id: user.id,
-        firstName: user.first_name,
-        lastName: user.last_name,
-        email: user.email,
-        roles: user.roles,
-        competenceGroups: user.competence_groups,
-        isActive: user.is_active,
-        createdAt: user.created_at,
-      },
+      user: mapUserToResponse(user),
     });
   } catch (error) {
     console.error('Get user error:', error);
@@ -217,16 +191,7 @@ router.put(
       const user = result.rows[0];
 
       res.json({
-        user: {
-          id: user.id,
-          firstName: user.first_name,
-          lastName: user.last_name,
-          email: user.email,
-          roles: user.roles,
-          competenceGroups: user.competence_groups,
-          isActive: user.is_active,
-          createdAt: user.created_at,
-        },
+        user: mapUserToResponse(user),
       });
     } catch (error) {
       console.error('Update user error:', error);

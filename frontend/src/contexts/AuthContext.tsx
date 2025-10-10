@@ -28,34 +28,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is already logged in
+    // Check if user is already logged in via httpOnly cookie
     const initAuth = async () => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        try {
-          const response = await authAPI.getCurrentUser();
-          setUser(response.user);
-        } catch (error) {
-          console.error('Failed to get current user:', error);
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-        }
+      try {
+        const response = await authAPI.getCurrentUser();
+        setUser(response.user);
+      } catch (error) {
+        // No valid session cookie, user not authenticated
+        setUser(null);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     initAuth();
   }, []);
 
   const login = async (email: string, password: string) => {
-    try {
-      const response = await authAPI.login({ email, password });
-      localStorage.setItem('token', response.token);
-      localStorage.setItem('user', JSON.stringify(response.user));
-      setUser(response.user);
-    } catch (error) {
-      throw error;
-    }
+    const response = await authAPI.login({ email, password });
+    // Token is automatically stored in httpOnly cookie by backend
+    setUser(response.user);
   };
 
   const logout = async () => {
@@ -65,8 +57,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('Logout error:', error);
     } finally {
       setUser(null);
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      // Cookie is cleared by backend
     }
   };
 

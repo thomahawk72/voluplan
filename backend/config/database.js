@@ -14,7 +14,8 @@ const pool = new Pool({
 
 pool.on('error', (err) => {
   console.error('Unexpected error on idle client', err);
-  process.exit(-1);
+  // Log error but don't crash the server
+  // The pool will handle reconnection automatically
 });
 
 module.exports = {

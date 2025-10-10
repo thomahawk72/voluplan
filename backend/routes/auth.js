@@ -8,6 +8,9 @@ const db = require('../config/database');
 const passport = require('../config/passport');
 const { sendPasswordResetEmail } = require('../services/emailService');
 const { authenticateToken } = require('../middleware/auth');
+const { createLoginLimiter, createPasswordResetLimiter } = require('../middleware/rateLimiter');
+const { mapUserToResponse } = require('../utils/userMapper');
+const { createOAuthCallbackHandler } = require('../utils/oauthHelpers');
 
 /**
  * Generate JWT token
@@ -24,6 +27,7 @@ const generateToken = (userId) => {
  */
 router.post(
   '/login',
+  createLoginLimiter(),
   [
     body('email').isEmail().normalizeEmail(),
     body('password').notEmpty(),
@@ -79,14 +83,7 @@ router.post(
       // Return user data and token
       res.json({
         token,
-        user: {
-          id: user.id,
-          firstName: user.first_name,
-          lastName: user.last_name,
-          email: user.email,
-          roles: user.roles,
-          competenceGroups: user.competence_groups,
-        },
+        user: mapUserToResponse(user),
       });
     } catch (error) {
       console.error('Login error:', error);
@@ -101,6 +98,7 @@ router.post(
  */
 router.post(
   '/forgot-password',
+  createPasswordResetLimiter(),
   [body('email').isEmail().normalizeEmail()],
   async (req, res) => {
     try {
@@ -151,6 +149,7 @@ router.post(
  */
 router.post(
   '/reset-password',
+  createPasswordResetLimiter(),
   [
     body('token').notEmpty(),
     body('password').isLength({ min: 8 }),
@@ -215,10 +214,7 @@ router.get(
 router.get(
   '/google/callback',
   passport.authenticate('google', { session: false, failureRedirect: '/login' }),
-  (req, res) => {
-    const token = generateToken(req.user.id);
-    res.redirect(`${process.env.FRONTEND_URL}/auth/callback?token=${token}`);
-  }
+  createOAuthCallbackHandler(generateToken)
 );
 
 /**
@@ -237,10 +233,7 @@ router.get(
 router.get(
   '/facebook/callback',
   passport.authenticate('facebook', { session: false, failureRedirect: '/login' }),
-  (req, res) => {
-    const token = generateToken(req.user.id);
-    res.redirect(`${process.env.FRONTEND_URL}/auth/callback?token=${token}`);
-  }
+  createOAuthCallbackHandler(generateToken)
 );
 
 /**
@@ -249,14 +242,7 @@ router.get(
  */
 router.get('/me', authenticateToken, async (req, res) => {
   res.json({
-    user: {
-      id: req.user.id,
-      firstName: req.user.first_name,
-      lastName: req.user.last_name,
-      email: req.user.email,
-      roles: req.user.roles,
-      competenceGroups: req.user.competence_groups,
-    },
+    user: mapUserToResponse(req.user),
   });
 });
 

@@ -3,15 +3,19 @@
  * Throws error with list of missing variables if validation fails
  */
 const validateEnv = () => {
+  // On Heroku, DATABASE_URL is provided instead of individual DB vars
+  const hasHerokuDatabase = !!process.env.DATABASE_URL;
+  
   const required = [
     'PORT',
-    'DB_HOST',
-    'DB_NAME',
-    'DB_USER',
-    'DB_PASSWORD',
     'JWT_SECRET',
     'FRONTEND_URL',
   ];
+  
+  // Only require individual DB vars if DATABASE_URL is not set
+  if (!hasHerokuDatabase) {
+    required.push('DB_HOST', 'DB_NAME', 'DB_USER', 'DB_PASSWORD');
+  }
 
   const missing = required.filter(key => !process.env[key]);
 
@@ -21,6 +25,10 @@ const validateEnv = () => {
       'Please check your .env file and ensure all required variables are set.\n' +
       'See .env.example for reference.'
     );
+  }
+  
+  if (hasHerokuDatabase) {
+    console.log('✅ Using Heroku DATABASE_URL');
   }
 
   // Warn about optional OAuth variables if not set

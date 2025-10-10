@@ -38,11 +38,6 @@ app.get('/health', (req, res) => {
 // Serve static files from the React app in production
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../frontend/build')));
-
-  // Handle React routing, return all requests to React app
-  app.get('/*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
-  });
 }
 
 // Error handling middleware
@@ -53,12 +48,14 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 handler for API routes only (in development)
-if (process.env.NODE_ENV !== 'production') {
-  app.use((req, res) => {
+// Fallback handler - serve React app for non-API routes
+app.use((req, res) => {
+  if (process.env.NODE_ENV === 'production' && !req.path.startsWith('/api')) {
+    res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
+  } else {
     res.status(404).json({ error: 'Route not found' });
-  });
-}
+  }
+});
 
 const PORT = process.env.PORT || 5000;
 

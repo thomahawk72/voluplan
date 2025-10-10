@@ -1,10 +1,10 @@
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
-const passport = require('./config/passport');
+const passport = require('./shared/config/passport');
 const path = require('path');
-const { createGeneralLimiter } = require('./middleware/rateLimiter');
-const { validateEnv } = require('./utils/envValidator');
+const { createGeneralLimiter } = require('./shared/middleware/rateLimiter');
+const { validateEnv } = require('./shared/utils/envValidator');
 require('dotenv').config();
 
 // Validate environment variables on startup
@@ -25,9 +25,10 @@ app.use(passport.initialize());
 // Apply general rate limiting to all API routes
 app.use('/api/', createGeneralLimiter());
 
-// Routes
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/users', require('./routes/users'));
+// Module Routes
+app.use('/api', require('./modules/bruker/routes'));
+app.use('/api/kompetanse', require('./modules/kompetanse/routes'));
+app.use('/api/produksjon', require('./modules/produksjon/routes'));
 
 // Health check
 app.get('/health', (req, res) => {

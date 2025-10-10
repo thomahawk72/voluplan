@@ -1,0 +1,6 @@
+Analysere størrelsen på moduler, services, hooks etc.
+Ingen skal være større enn 300 linjer kode
+Foreslå refaktorering så fort størrelsen nærmer seg 300 linjer kode
+---
+alwaysApply: true
+---

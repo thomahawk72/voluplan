@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Volunteer Planning System",
   "engines": {
-    "node": ">=18.x"
+    "node": "18.x"
   },
   "scripts": {
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",

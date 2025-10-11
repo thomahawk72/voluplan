@@ -49,13 +49,13 @@ const getKategori = async (req, res) => {
  */
 const createKategori = async (req, res) => {
   try {
-    const { navn, beskrivelse } = req.body;
-    const kategori = await service.createKategori({ navn, beskrivelse });
+    const { navn, parentId, beskrivelse } = req.body;
+    const kategori = await service.createKategori({ navn, parentId, beskrivelse });
     res.status(201).json({ kategori });
   } catch (error) {
     console.error('[KOMPETANSE] Create kategori error:', error);
     if (error.code === '23505') { // Unique violation
-      return res.status(400).json({ error: 'Kategori med dette navnet finnes allerede' });
+      return res.status(400).json({ error: 'Kategori med dette navnet finnes allerede for denne parent' });
     }
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -68,9 +68,9 @@ const createKategori = async (req, res) => {
 const updateKategori = async (req, res) => {
   try {
     const { id } = req.params;
-    const { navn, beskrivelse } = req.body;
+    const { navn, parentId, beskrivelse } = req.body;
     
-    const kategori = await service.updateKategori(id, { navn, beskrivelse });
+    const kategori = await service.updateKategori(id, { navn, parentId, beskrivelse });
     
     if (!kategori) {
       return res.status(404).json({ error: 'Kategori not found' });
@@ -103,7 +103,14 @@ const deleteKategori = async (req, res) => {
   } catch (error) {
     console.error('[KOMPETANSE] Delete kategori error:', error);
     if (error.code === '23503') { // Foreign key violation
-      return res.status(400).json({ error: 'Kan ikke slette kategori som har tilknyttede kompetanser' });
+      const detail = error.detail || '';
+      if (detail.includes('talent')) {
+        return res.status(400).json({ error: 'Kan ikke slette kategori som har talenter. Slett talentene først.' });
+      }
+      if (detail.includes('talentkategori')) {
+        return res.status(400).json({ error: 'Kan ikke slette kategori som har sub-kategorier. Slett sub-kategoriene først.' });
+      }
+      return res.status(400).json({ error: 'Kan ikke slette kategori som er i bruk' });
     }
     res.status(500).json({ error: 'Internal server error' });
   }

@@ -530,6 +530,35 @@ Modulær arkitektur gjør det enkelt å:
 
 ---
 
+## Frontend Sider
+
+### Dashboard (`/dashboard`)
+- Oversikt over kommende og gjennomførte produksjoner
+- Navigasjon til produksjonsdetaljer
+- Tilgang til innstillinger og profil
+
+### Produksjonsdetalj (`/produksjon/:id`)
+- Detaljert visning av én produksjon
+- Medarbeider-liste (gruppert etter talent-kategori)
+- Produksjonsplan og oppmøtetider
+- Statistikk (bekreftet, ikke svart, avslått)
+
+### Innstillinger (`/settings`)
+**Funksjonalitet:**
+- **Talent & Kategorier (aktiv):**
+  - Hierarkisk tre-visning (3 nivåer)
+  - Opprett/rediger/slett kategorier
+  - Opprett/rediger/slett talenter
+  - Visuelt skille mellom root, sub og detail-kategorier
+- **Produksjonskategorier (kommer snart)**
+- **Brukere (kommer snart)**
+
+**UI Design:**
+- Tre-struktur med collapse/expand
+- Farge-koding per nivå (Primary → Secondary → Info)
+- Inline edit/delete knapper
+- Dialog for create/edit
+
 ## Ressurser
 
 - **Schema**: Se `DATABASE.md` for komplett oversikt over databaseskjema

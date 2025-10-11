@@ -153,7 +153,7 @@ const Dashboard: React.FC = () => {
               <MenuItem onClick={handleClose}>
                 <AccountCircle sx={{ mr: 1 }} /> Profil
               </MenuItem>
-              <MenuItem onClick={handleClose}>
+              <MenuItem onClick={() => { handleClose(); navigate('/settings'); }}>
                 <Settings sx={{ mr: 1 }} /> Innstillinger
               </MenuItem>
               <MenuItem onClick={handleLogout}>

@@ -9,6 +9,7 @@ import ResetPassword from './pages/ResetPassword';
 import AuthCallback from './pages/AuthCallback';
 import Dashboard from './pages/Dashboard';
 import ProductionDetail from './pages/ProductionDetail';
+import Settings from './pages/Settings';
 
 const theme = createTheme({
   palette: {
@@ -77,14 +78,22 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/produksjon/:id"
-              element={
-                <ProtectedRoute>
-                  <ProductionDetail />
-                </ProtectedRoute>
-              }
-            />
+          <Route
+            path="/produksjon/:id"
+            element={
+              <ProtectedRoute>
+                <ProductionDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+            }
+          />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>

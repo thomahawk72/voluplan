@@ -54,6 +54,7 @@ router.post(
   requireRole(['admin']),
   [
     body('navn').trim().notEmpty().withMessage('Navn er påkrevd'),
+    body('parentId').optional().isInt().withMessage('Parent ID må være et tall'),
     body('beskrivelse').optional().trim(),
   ],
   validate,
@@ -70,6 +71,7 @@ router.put(
   requireRole(['admin']),
   [
     body('navn').optional().trim().notEmpty(),
+    body('parentId').optional().isInt().withMessage('Parent ID må være et tall'),
     body('beskrivelse').optional().trim(),
   ],
   validate,

@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS users (
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
+    phone_number VARCHAR(20),
     password_hash VARCHAR(255),
     google_id VARCHAR(255) UNIQUE,
     facebook_id VARCHAR(255) UNIQUE,
@@ -24,20 +25,22 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Kompetansekategori tabell
-CREATE TABLE IF NOT EXISTS kompetansekategori (
-    id SERIAL PRIMARY KEY,
-    navn VARCHAR(100) UNIQUE NOT NULL,
-    beskrivelse TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Kompetanse tabell
-CREATE TABLE IF NOT EXISTS kompetanse (
+-- Talentkategori tabell (hierarkisk, maks 2 nivåer)
+CREATE TABLE IF NOT EXISTS talentkategori (
     id SERIAL PRIMARY KEY,
     navn VARCHAR(100) NOT NULL,
-    kategori_id INTEGER NOT NULL REFERENCES kompetansekategori(id) ON DELETE RESTRICT,
+    parent_id INTEGER REFERENCES talentkategori(id) ON DELETE CASCADE,
+    beskrivelse TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(navn, parent_id) -- Unik kombinasjon av navn og parent
+);
+
+-- Talent tabell
+CREATE TABLE IF NOT EXISTS talent (
+    id SERIAL PRIMARY KEY,
+    navn VARCHAR(100) NOT NULL,
+    kategori_id INTEGER NOT NULL REFERENCES talentkategori(id) ON DELETE RESTRICT,
     leder_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
     beskrivelse TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -85,12 +88,12 @@ CREATE TABLE IF NOT EXISTS produksjon_bemanning (
     id SERIAL PRIMARY KEY,
     produksjon_id INTEGER NOT NULL REFERENCES produksjon(id) ON DELETE CASCADE,
     person_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    kompetanse_id INTEGER NOT NULL REFERENCES kompetanse(id) ON DELETE RESTRICT,
+    talent_id INTEGER NOT NULL REFERENCES talent(id) ON DELETE RESTRICT,
     notater TEXT,
     status VARCHAR(50) DEFAULT 'planlagt',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (produksjon_id, person_id, kompetanse_id)
+    UNIQUE (produksjon_id, person_id, talent_id)
 );
 
 CREATE INDEX idx_users_email ON users(email);
@@ -98,9 +101,10 @@ CREATE INDEX idx_users_google_id ON users(google_id);
 CREATE INDEX idx_users_facebook_id ON users(facebook_id);
 CREATE INDEX idx_password_reset_tokens_token ON password_reset_tokens(token);
 CREATE INDEX idx_password_reset_tokens_user_id ON password_reset_tokens(user_id);
-CREATE INDEX idx_kompetanse_kategori_id ON kompetanse(kategori_id);
-CREATE INDEX idx_kompetanse_leder_id ON kompetanse(leder_id);
-CREATE INDEX idx_kompetansekategori_navn ON kompetansekategori(navn);
+CREATE INDEX idx_talent_kategori_id ON talent(kategori_id);
+CREATE INDEX idx_talent_leder_id ON talent(leder_id);
+CREATE INDEX idx_talentkategori_parent_id ON talentkategori(parent_id);
+CREATE INDEX idx_talentkategori_navn ON talentkategori(navn);
 CREATE INDEX idx_produksjon_kategori_id ON produksjon(kategori_id);
 CREATE INDEX idx_produksjon_plan_id ON produksjon(plan_id);
 CREATE INDEX idx_produksjon_tid ON produksjon(tid);
@@ -110,5 +114,5 @@ CREATE INDEX idx_produksjonsplan_start_dato ON produksjonsplan(start_dato);
 CREATE INDEX idx_produksjonsplan_slutt_dato ON produksjonsplan(slutt_dato);
 CREATE INDEX idx_produksjon_bemanning_produksjon_id ON produksjon_bemanning(produksjon_id);
 CREATE INDEX idx_produksjon_bemanning_person_id ON produksjon_bemanning(person_id);
-CREATE INDEX idx_produksjon_bemanning_kompetanse_id ON produksjon_bemanning(kompetanse_id);
+CREATE INDEX idx_produksjon_bemanning_talent_id ON produksjon_bemanning(talent_id);
 

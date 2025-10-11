@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Container,
@@ -17,6 +17,8 @@ import {
   ListItemText,
   ListItemIcon,
   Divider,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import {
   People,
@@ -32,11 +34,41 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { produksjonAPI, Produksjon } from '../services/api';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  
+  const [kommendeProduksjoner, setKommendeProduksjoner] = useState<Produksjon[]>([]);
+  const [nyligGjennomfort, setNyligGjennomfort] = useState<Produksjon[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchProduksjoner = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Hent kommende produksjoner
+        const kommendeData = await produksjonAPI.getAll({ kommende: true, publisert: true });
+        setKommendeProduksjoner(kommendeData.produksjoner);
+        
+        // Hent gjennomførte produksjoner
+        const gjennomfortData = await produksjonAPI.getAll({ gjennomfort: true, publisert: true });
+        setNyligGjennomfort(gjennomfortData.produksjoner.slice(0, 5)); // Vis kun de 5 siste
+      } catch (err: any) {
+        console.error('Feil ved henting av produksjoner:', err);
+        setError('Kunne ikke laste produksjoner. Vennligst prøv igjen.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProduksjoner();
+  }, []);
 
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -51,46 +83,23 @@ const Dashboard: React.FC = () => {
     navigate('/login');
   };
 
-  // Eksempeldata - i produksjon vil dette komme fra API
-  const kommendeProduksjoner = [
-    {
-      id: 1,
-      navn: 'Sommershow 2025',
-      dato: '15. juni 2025',
-      status: 'Planlagt',
-      statusColor: 'success' as const,
-      deltakere: 12,
-    },
-    {
-      id: 2,
-      navn: 'Høstkonsert',
-      dato: '20. september 2025',
-      status: 'Planlagt',
-      statusColor: 'success' as const,
-      deltakere: 8,
-    },
-    {
-      id: 3,
-      navn: 'Julegalla',
-      dato: '18. desember 2025',
-      status: 'Under planlegging',
-      statusColor: 'warning' as const,
-      deltakere: 5,
-    },
-  ];
+  const formatDato = (tidString: string) => {
+    const dato = new Date(tidString);
+    return dato.toLocaleDateString('nb-NO', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+  };
 
-  const nyligGjennomfort = [
-    {
-      id: 1,
-      navn: 'Vårkonsert 2025',
-      dato: '12.3.2025',
-    },
-    {
-      id: 2,
-      navn: 'Påskeshow',
-      dato: '18.4.2025',
-    },
-  ];
+  const formatDatoKort = (tidString: string) => {
+    const dato = new Date(tidString);
+    return dato.toLocaleDateString('nb-NO', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  };
 
   const hurtigvalg = [
     {
@@ -158,74 +167,99 @@ const Dashboard: React.FC = () => {
       </AppBar>
 
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        {/* Kommende show */}
-        <Paper sx={{ p: 3, mb: 3, boxShadow: 2 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h5" sx={{ fontWeight: 700 }}>
-              Fremtidige produksjoner
-            </Typography>
-            <Button
-              variant="contained"
-              startIcon={<Add />}
-              sx={{
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                '&:hover': {
-                  background: 'linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%)',
-                },
-              }}
-            >
-              Ny produksjon
-            </Button>
+        {loading && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+            <CircularProgress />
           </Box>
-          
-          <List>
-            {kommendeProduksjoner.map((produksjon, index) => (
-              <React.Fragment key={produksjon.id}>
-                <ListItem
+        )}
+        
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error}
+          </Alert>
+        )}
+        
+        {!loading && !error && (
+          <>
+            {/* Kommende show */}
+            <Paper sx={{ p: 3, mb: 3, boxShadow: 2 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                  Fremtidige produksjoner
+                </Typography>
+                <Button
+                  variant="contained"
+                  startIcon={<Add />}
                   sx={{
-                    py: 2,
-                    cursor: 'pointer',
-                    '&:hover': { backgroundColor: '#f5f5f5' },
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%)',
+                    },
                   }}
                 >
-                  <ListItemIcon>
-                    <CalendarToday color="action" />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                          {produksjon.navn}
-                        </Typography>
-                        <Chip
-                          label={produksjon.status}
-                          color={produksjon.statusColor}
-                          size="small"
-                          sx={{ height: 20 }}
+                  Ny produksjon
+                </Button>
+              </Box>
+              
+              {kommendeProduksjoner.length === 0 ? (
+                <Alert severity="info">Ingen fremtidige produksjoner planlagt</Alert>
+              ) : (
+                <List>
+                  {kommendeProduksjoner.map((produksjon, index) => (
+                    <React.Fragment key={produksjon.id}>
+                      <ListItem
+                        onClick={() => navigate(`/produksjon/${produksjon.id}`)}
+                        sx={{
+                          py: 2,
+                          cursor: 'pointer',
+                          '&:hover': { backgroundColor: '#f5f5f5' },
+                          borderRadius: 1,
+                        }}
+                      >
+                        <ListItemIcon>
+                          <CalendarToday color="action" />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                                {produksjon.navn}
+                              </Typography>
+                              {produksjon.kategori_navn && (
+                                <Chip
+                                  label={produksjon.kategori_navn}
+                                  color="primary"
+                                  size="small"
+                                  variant="outlined"
+                                  sx={{ height: 20 }}
+                                />
+                              )}
+                            </Box>
+                          }
+                          secondary={
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 0.5 }}>
+                              <Typography variant="body2" color="text.secondary">
+                                {formatDato(produksjon.tid)}
+                              </Typography>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                <People fontSize="small" color="action" />
+                                <Typography variant="body2" color="text.secondary">
+                                  {produksjon.antall_personer} personer
+                                </Typography>
+                              </Box>
+                            </Box>
+                          }
                         />
-                      </Box>
-                    }
-                    secondary={
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 0.5 }}>
-                        <Typography variant="body2" color="text.secondary">
-                          {produksjon.dato}
-                        </Typography>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                          <People fontSize="small" color="action" />
-                          <Typography variant="body2" color="text.secondary">
-                            {produksjon.deltakere} personer
-                          </Typography>
-                        </Box>
-                      </Box>
-                    }
-                  />
-                  <ChevronRight color="action" />
-                </ListItem>
-                {index < kommendeProduksjoner.length - 1 && <Divider />}
-              </React.Fragment>
-            ))}
-          </List>
-        </Paper>
+                        <ChevronRight color="action" />
+                      </ListItem>
+                      {index < kommendeProduksjoner.length - 1 && <Divider />}
+                    </React.Fragment>
+                  ))}
+                </List>
+              )}
+            </Paper>
+          </>
+        )}
 
         {/* Hurtigvalg */}
         <Paper sx={{ p: 3, mb: 3, boxShadow: 2 }}>
@@ -269,27 +303,42 @@ const Dashboard: React.FC = () => {
         </Paper>
 
         {/* Nylig gjennomført */}
-        <Paper sx={{ p: 3, boxShadow: 2 }}>
-          <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
-            Nylig gjennomført
-          </Typography>
-          <List>
-            {nyligGjennomfort.map((produksjon, index) => (
-              <React.Fragment key={produksjon.id}>
-                <ListItem sx={{ py: 1 }}>
-                  <ListItemIcon>
-                    <CheckCircle color="success" />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={produksjon.navn}
-                    secondary={produksjon.dato}
-                  />
-                </ListItem>
-                {index < nyligGjennomfort.length - 1 && <Divider />}
-              </React.Fragment>
-            ))}
-          </List>
-        </Paper>
+        {!loading && !error && (
+          <Paper sx={{ p: 3, boxShadow: 2 }}>
+            <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
+              Nylig gjennomført
+            </Typography>
+            {nyligGjennomfort.length === 0 ? (
+              <Alert severity="info">Ingen gjennomførte produksjoner ennå</Alert>
+            ) : (
+              <List>
+                {nyligGjennomfort.map((produksjon, index) => (
+                  <React.Fragment key={produksjon.id}>
+                    <ListItem 
+                      onClick={() => navigate(`/produksjon/${produksjon.id}`)}
+                      sx={{ 
+                        py: 1.5,
+                        cursor: 'pointer',
+                        '&:hover': { backgroundColor: '#f5f5f5' },
+                        borderRadius: 1,
+                      }}
+                    >
+                      <ListItemIcon>
+                        <CheckCircle color="success" />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={produksjon.navn}
+                        secondary={formatDatoKort(produksjon.tid)}
+                      />
+                      <ChevronRight color="action" />
+                    </ListItem>
+                    {index < nyligGjennomfort.length - 1 && <Divider />}
+                  </React.Fragment>
+                ))}
+              </List>
+            )}
+          </Paper>
+        )}
       </Container>
     </Box>
   );

@@ -11,6 +11,7 @@ const mapUserToResponse = (user) => {
     firstName: user.first_name,
     lastName: user.last_name,
     email: user.email,
+    phoneNumber: user.phone_number,
     roles: user.roles || [],
     competenceGroups: user.competence_groups || [],
     isActive: user.is_active,

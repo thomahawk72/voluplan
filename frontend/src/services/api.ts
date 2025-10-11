@@ -42,6 +42,7 @@ export interface User {
   firstName: string;
   lastName: string;
   email: string;
+  phoneNumber?: string;
   roles: string[];
   competenceGroups: string[];
 }
@@ -103,6 +104,84 @@ export const usersAPI = {
 
   delete: async (id: number): Promise<{ message: string }> => {
     const response = await api.delete(`/users/${id}`);
+    return response.data;
+  },
+};
+
+// Production types
+export interface Produksjon {
+  id: number;
+  navn: string;
+  tid: string;
+  kategori_id: number | null;
+  kategori_navn: string | null;
+  publisert: boolean;
+  beskrivelse: string | null;
+  plan_id: number | null;
+  plan_navn: string | null;
+  antall_personer: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Bemanning {
+  id: number;
+  produksjon_id: number;
+  person_id: number;
+  talent_id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  talent_navn: string;
+  talent_kategori: string;
+  notater: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProduksjonsPlan {
+  id: number;
+  navn: string;
+  beskrivelse: string | null;
+  start_dato: string | null;
+  slutt_dato: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Production API
+export const produksjonAPI = {
+  getAll: async (filters?: { 
+    kategoriId?: number; 
+    planId?: number; 
+    publisert?: boolean;
+    kommende?: boolean;
+    gjennomfort?: boolean;
+  }): Promise<{ produksjoner: Produksjon[] }> => {
+    const params = new URLSearchParams();
+    if (filters?.kategoriId) params.append('kategoriId', String(filters.kategoriId));
+    if (filters?.planId) params.append('planId', String(filters.planId));
+    if (filters?.publisert !== undefined) params.append('publisert', String(filters.publisert));
+    if (filters?.kommende) params.append('kommende', 'true');
+    if (filters?.gjennomfort) params.append('gjennomfort', 'true');
+    
+    const response = await api.get(`/produksjon?${params.toString()}`);
+    return response.data;
+  },
+
+  getById: async (id: number): Promise<{ produksjon: Produksjon }> => {
+    const response = await api.get(`/produksjon/${id}`);
+    return response.data;
+  },
+
+  getBemanning: async (id: number): Promise<{ bemanning: Bemanning[] }> => {
+    const response = await api.get(`/produksjon/${id}/bemanning`);
+    return response.data;
+  },
+
+  getPlan: async (id: number): Promise<{ plan: ProduksjonsPlan }> => {
+    const response = await api.get(`/produksjon/planer/${id}`);
     return response.data;
   },
 };

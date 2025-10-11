@@ -23,7 +23,7 @@ const findByEmail = async (email) => {
  */
 const findById = async (id) => {
   const result = await db.query(
-    'SELECT id, first_name, last_name, email, roles, competence_groups, is_active, created_at FROM users WHERE id = $1',
+    'SELECT id, first_name, last_name, email, phone_number, roles, competence_groups, is_active, created_at FROM users WHERE id = $1',
     [id]
   );
   return result.rows[0] || null;
@@ -34,7 +34,7 @@ const findById = async (id) => {
  */
 const findAll = async () => {
   const result = await db.query(
-    'SELECT id, first_name, last_name, email, roles, competence_groups, is_active, created_at FROM users ORDER BY created_at DESC'
+    'SELECT id, first_name, last_name, email, phone_number, roles, competence_groups, is_active, created_at FROM users ORDER BY created_at DESC'
   );
   return result.rows;
 };
@@ -43,11 +43,11 @@ const findAll = async () => {
  * Opprett ny bruker
  */
 const create = async (userData) => {
-  const { firstName, lastName, email, roles = [], competenceGroups = [], passwordHash = null } = userData;
+  const { firstName, lastName, email, phoneNumber = null, roles = [], competenceGroups = [], passwordHash = null } = userData;
   
   const result = await db.query(
-    'INSERT INTO users (first_name, last_name, email, roles, competence_groups, password_hash) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, first_name, last_name, email, roles, competence_groups, is_active, created_at',
-    [firstName, lastName, email, roles, competenceGroups, passwordHash]
+    'INSERT INTO users (first_name, last_name, email, phone_number, roles, competence_groups, password_hash) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, first_name, last_name, email, phone_number, roles, competence_groups, is_active, created_at',
+    [firstName, lastName, email, phoneNumber, roles, competenceGroups, passwordHash]
   );
   
   return result.rows[0];
@@ -57,7 +57,7 @@ const create = async (userData) => {
  * Oppdater bruker
  */
 const update = async (id, updates) => {
-  const { firstName, lastName, roles, competenceGroups, isActive } = updates;
+  const { firstName, lastName, phoneNumber, roles, competenceGroups, isActive } = updates;
   
   const updateFields = [];
   const values = [];
@@ -70,6 +70,10 @@ const update = async (id, updates) => {
   if (lastName !== undefined) {
     updateFields.push(`last_name = $${paramCount++}`);
     values.push(lastName);
+  }
+  if (phoneNumber !== undefined) {
+    updateFields.push(`phone_number = $${paramCount++}`);
+    values.push(phoneNumber);
   }
   if (roles !== undefined) {
     updateFields.push(`roles = $${paramCount++}`);
@@ -91,7 +95,7 @@ const update = async (id, updates) => {
   updateFields.push(`updated_at = CURRENT_TIMESTAMP`);
   values.push(id);
   
-  const query = `UPDATE users SET ${updateFields.join(', ')} WHERE id = $${paramCount} RETURNING id, first_name, last_name, email, roles, competence_groups, is_active, created_at`;
+  const query = `UPDATE users SET ${updateFields.join(', ')} WHERE id = $${paramCount} RETURNING id, first_name, last_name, email, phone_number, roles, competence_groups, is_active, created_at`;
   
   const result = await db.query(query, values);
   return result.rows[0] || null;

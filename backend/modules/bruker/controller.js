@@ -199,7 +199,7 @@ const get = async (req, res) => {
  */
 const create = async (req, res) => {
   try {
-    const { firstName, lastName, email, roles = [], competenceGroups = [] } = req.body;
+    const { firstName, lastName, email, phoneNumber, roles = [], competenceGroups = [] } = req.body;
     
     // Sjekk om bruker allerede finnes
     const existingUser = await service.findByEmail(email);
@@ -213,6 +213,7 @@ const create = async (req, res) => {
       firstName,
       lastName,
       email,
+      phoneNumber,
       roles,
       competenceGroups,
     });
@@ -233,7 +234,7 @@ const create = async (req, res) => {
 const update = async (req, res) => {
   try {
     const { id } = req.params;
-    const { firstName, lastName, roles, competenceGroups, isActive } = req.body;
+    const { firstName, lastName, phoneNumber, roles, competenceGroups, isActive } = req.body;
     
     // Brukere kan kun oppdatere sin egen profil (begrensede felter) med mindre de er admin
     const isAdmin = req.user.roles.includes('admin');
@@ -243,7 +244,7 @@ const update = async (req, res) => {
       return res.status(403).json({ error: 'Insufficient permissions' });
     }
     
-    // Ikke-admin brukere kan kun oppdatere navn
+    // Ikke-admin brukere kan kun oppdatere navn og telefon
     if (!isAdmin && (roles || competenceGroups || isActive !== undefined)) {
       return res.status(403).json({ error: 'Only admins can update roles, competence groups, and active status' });
     }
@@ -251,6 +252,7 @@ const update = async (req, res) => {
     const updates = {};
     if (firstName !== undefined) updates.firstName = firstName;
     if (lastName !== undefined) updates.lastName = lastName;
+    if (phoneNumber !== undefined) updates.phoneNumber = phoneNumber;
     if (roles !== undefined && isAdmin) updates.roles = roles;
     if (competenceGroups !== undefined && isAdmin) updates.competenceGroups = competenceGroups;
     if (isActive !== undefined && isAdmin) updates.isActive = isActive;

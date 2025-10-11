@@ -10,43 +10,58 @@ const db = require('../../shared/config/database');
 // ============================================================================
 
 /**
- * Finn alle kompetansekategorier
+ * Finn alle talentkategorier (med hierarki)
  */
 const findAllKategorier = async () => {
-  const result = await db.query(
-    'SELECT * FROM kompetansekategori ORDER BY navn'
-  );
+  const result = await db.query(`
+    WITH RECURSIVE category_hierarchy AS (
+      -- Root kategorier (parent_id IS NULL)
+      SELECT id, navn, parent_id, beskrivelse, created_at, updated_at, 0 as level, navn as path
+      FROM talentkategori 
+      WHERE parent_id IS NULL
+      
+      UNION ALL
+      
+      -- Child kategorier
+      SELECT tk.id, tk.navn, tk.parent_id, tk.beskrivelse, tk.created_at, tk.updated_at, 
+             ch.level + 1, ch.path || ' - ' || tk.navn as path
+      FROM talentkategori tk
+      INNER JOIN category_hierarchy ch ON tk.parent_id = ch.id
+      WHERE ch.level < 1 -- Maks 2 nivåer
+    )
+    SELECT * FROM category_hierarchy ORDER BY level, navn
+  `);
   return result.rows;
 };
 
 /**
- * Finn kompetansekategori basert på ID
+ * Finn talentkategori basert på ID
  */
 const findKategoriById = async (id) => {
   const result = await db.query(
-    'SELECT * FROM kompetansekategori WHERE id = $1',
+    'SELECT * FROM talentkategori WHERE id = $1',
     [id]
   );
   return result.rows[0] || null;
 };
 
 /**
- * Opprett ny kompetansekategori
+ * Opprett ny talentkategori
  */
 const createKategori = async (data) => {
-  const { navn, beskrivelse } = data;
+  const { navn, beskrivelse, parentId } = data;
   const result = await db.query(
-    'INSERT INTO kompetansekategori (navn, beskrivelse) VALUES ($1, $2) RETURNING *',
-    [navn, beskrivelse]
+    'INSERT INTO talentkategori (navn, beskrivelse, parent_id) VALUES ($1, $2, $3) RETURNING *',
+    [navn, beskrivelse, parentId]
   );
   return result.rows[0];
 };
 
 /**
- * Oppdater kompetansekategori
+ * Oppdater talentkategori
  */
 const updateKategori = async (id, data) => {
-  const { navn, beskrivelse } = data;
+  const { navn, beskrivelse, parentId } = data;
   
   const updateFields = [];
   const values = [];
@@ -60,6 +75,10 @@ const updateKategori = async (id, data) => {
     updateFields.push(`beskrivelse = $${paramCount++}`);
     values.push(beskrivelse);
   }
+  if (parentId !== undefined) {
+    updateFields.push(`parent_id = $${paramCount++}`);
+    values.push(parentId);
+  }
   
   if (updateFields.length === 0) {
     return null;
@@ -68,17 +87,17 @@ const updateKategori = async (id, data) => {
   updateFields.push(`updated_at = CURRENT_TIMESTAMP`);
   values.push(id);
   
-  const query = `UPDATE kompetansekategori SET ${updateFields.join(', ')} WHERE id = $${paramCount} RETURNING *`;
+  const query = `UPDATE talentkategori SET ${updateFields.join(', ')} WHERE id = $${paramCount} RETURNING *`;
   const result = await db.query(query, values);
   return result.rows[0] || null;
 };
 
 /**
- * Slett kompetansekategori
+ * Slett talentkategori
  */
 const deleteKategori = async (id) => {
   const result = await db.query(
-    'DELETE FROM kompetansekategori WHERE id = $1 RETURNING id',
+    'DELETE FROM talentkategori WHERE id = $1 RETURNING id',
     [id]
   );
   return result.rows[0] || null;
@@ -89,19 +108,27 @@ const deleteKategori = async (id) => {
 // ============================================================================
 
 /**
- * Finn alle kompetanser
+ * Finn alle talenter
  */
 const findAll = async (filters = {}) => {
   let query = `
     SELECT 
-      k.*,
-      kk.navn as kategori_navn,
+      t.*,
+      COALESCE(
+        CASE 
+          WHEN tk.parent_id IS NOT NULL THEN 
+            (SELECT parent.navn FROM talentkategori parent WHERE parent.id = tk.parent_id) || ' - ' || tk.navn
+          ELSE tk.navn
+        END, 
+        tk.navn
+      ) as kategori_navn,
+      tk.parent_id as kategori_parent_id,
       u.first_name as leder_first_name,
       u.last_name as leder_last_name,
       u.email as leder_email
-    FROM kompetanse k
-    LEFT JOIN kompetansekategori kk ON k.kategori_id = kk.id
-    LEFT JOIN users u ON k.leder_id = u.id
+    FROM talent t
+    LEFT JOIN talentkategori tk ON t.kategori_id = tk.id
+    LEFT JOIN users u ON t.leder_id = u.id
   `;
   
   const conditions = [];
@@ -109,12 +136,12 @@ const findAll = async (filters = {}) => {
   let paramCount = 1;
   
   if (filters.kategoriId) {
-    conditions.push(`k.kategori_id = $${paramCount++}`);
+    conditions.push(`t.kategori_id = $${paramCount++}`);
     values.push(filters.kategoriId);
   }
   
   if (filters.lederId) {
-    conditions.push(`k.leder_id = $${paramCount++}`);
+    conditions.push(`t.leder_id = $${paramCount++}`);
     values.push(filters.lederId);
   }
   
@@ -122,46 +149,54 @@ const findAll = async (filters = {}) => {
     query += ' WHERE ' + conditions.join(' AND ');
   }
   
-  query += ' ORDER BY kk.navn, k.navn';
+  query += ' ORDER BY tk.parent_id, tk.navn, t.navn';
   
   const result = await db.query(query, values);
   return result.rows;
 };
 
 /**
- * Finn kompetanse basert på ID
+ * Finn talent basert på ID
  */
 const findById = async (id) => {
   const result = await db.query(
     `SELECT 
-      k.*,
-      kk.navn as kategori_navn,
+      t.*,
+      COALESCE(
+        CASE 
+          WHEN tk.parent_id IS NOT NULL THEN 
+            (SELECT parent.navn FROM talentkategori parent WHERE parent.id = tk.parent_id) || ' - ' || tk.navn
+          ELSE tk.navn
+        END, 
+        tk.navn
+      ) as kategori_navn,
+      tk.parent_id as kategori_parent_id,
       u.first_name as leder_first_name,
       u.last_name as leder_last_name,
       u.email as leder_email
-    FROM kompetanse k
-    LEFT JOIN kompetansekategori kk ON k.kategori_id = kk.id
-    LEFT JOIN users u ON k.leder_id = u.id
-    WHERE k.id = $1`,
+    FROM talent t
+    LEFT JOIN talentkategori tk ON t.kategori_id = tk.id
+    LEFT JOIN users u ON t.leder_id = u.id
+    WHERE t.id = $1`,
     [id]
   );
   return result.rows[0] || null;
 };
 
 /**
- * Opprett ny kompetanse
+ * Opprett ny talent
  */
 const create = async (data) => {
   const { navn, kategoriId, lederId, beskrivelse } = data;
   const result = await db.query(
-    'INSERT INTO kompetanse (navn, kategori_id, leder_id, beskrivelse) VALUES ($1, $2, $3, $4) RETURNING *',
+    'INSERT INTO talent (navn, kategori_id, leder_id, beskrivelse) VALUES ($1, $2, $3, $4) RETURNING *',
     [navn, kategoriId, lederId || null, beskrivelse]
   );
   return result.rows[0];
 };
 
 /**
- * Oppdater kompetanse
+ * Oppdater talent
  */
 const update = async (id, data) => {
   const { navn, kategoriId, lederId, beskrivelse } = data;
@@ -194,17 +229,17 @@ const update = async (id, data) => {
   updateFields.push(`updated_at = CURRENT_TIMESTAMP`);
   values.push(id);
   
-  const query = `UPDATE kompetanse SET ${updateFields.join(', ')} WHERE id = $${paramCount} RETURNING *`;
+  const query = `UPDATE talent SET ${updateFields.join(', ')} WHERE id = $${paramCount} RETURNING *`;
   const result = await db.query(query, values);
   return result.rows[0] || null;
 };
 
 /**
- * Slett kompetanse
+ * Slett talent
  */
 const remove = async (id) => {
   const result = await db.query(
-    'DELETE FROM kompetanse WHERE id = $1 RETURNING id',
+    'DELETE FROM talent WHERE id = $1 RETURNING id',
     [id]
   );
   return result.rows[0] || null;

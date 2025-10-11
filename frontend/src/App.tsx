@@ -8,6 +8,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import AuthCallback from './pages/AuthCallback';
 import Dashboard from './pages/Dashboard';
+import ProductionDetail from './pages/ProductionDetail';
 
 const theme = createTheme({
   palette: {
@@ -73,6 +74,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/produksjon/:id"
+              element={
+                <ProtectedRoute>
+                  <ProductionDetail />
                 </ProtectedRoute>
               }
             />

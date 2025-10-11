@@ -91,7 +91,7 @@ router.delete('/:id', authenticateToken, requireRole(['admin']), controller.remo
 
 router.post('/:id/bemanning', authenticateToken, requireRole(['admin']), [
   body('personId').isInt(),
-  body('kompetanseId').isInt(),
+  body('talentId').isInt(),
   body('notater').optional().trim(),
   body('status').optional().isIn(['planlagt', 'bekreftet', 'avlyst']),
 ], validate, controller.addBemanning);

@@ -359,14 +359,21 @@ const findBemanningByProduksjonId = async (produksjonId) => {
       u.first_name,
       u.last_name,
       u.email,
-      k.navn as kompetanse_navn,
-      kk.navn as kompetanse_kategori
+      t.navn as talent_navn,
+      COALESCE(
+        CASE 
+          WHEN tk.parent_id IS NOT NULL THEN 
+            (SELECT parent.navn FROM talentkategori parent WHERE parent.id = tk.parent_id) || ' - ' || tk.navn
+          ELSE tk.navn
+        END, 
+        tk.navn
+      ) as talent_kategori
     FROM produksjon_bemanning pb
     JOIN users u ON pb.person_id = u.id
-    JOIN kompetanse k ON pb.kompetanse_id = k.id
-    JOIN kompetansekategori kk ON k.kategori_id = kk.id
+    JOIN talent t ON pb.talent_id = t.id
+    LEFT JOIN talentkategori tk ON t.kategori_id = tk.id
     WHERE pb.produksjon_id = $1
-    ORDER BY kk.navn, k.navn, u.last_name, u.first_name`,
+    ORDER BY tk.parent_id, tk.navn, t.navn, u.last_name, u.first_name`,
     [produksjonId]
   );
   return result.rows;
@@ -376,10 +383,10 @@ const findBemanningByProduksjonId = async (produksjonId) => {
  * Legg til person i produksjon
  */
 const addBemanning = async (data) => {
-  const { produksjonId, personId, kompetanseId, notater, status } = data;
+  const { produksjonId, personId, talentId, notater, status } = data;
   const result = await db.query(
-    'INSERT INTO produksjon_bemanning (produksjon_id, person_id, kompetanse_id, notater, status) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-    [produksjonId, personId, kompetanseId, notater, status || 'planlagt']
+    'INSERT INTO produksjon_bemanning (produksjon_id, person_id, talent_id, notater, status) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+    [produksjonId, personId, talentId, notater, status || 'planlagt']
   );
   return result.rows[0];
 };

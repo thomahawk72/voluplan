@@ -1,0 +1,103 @@
+# Cursor AI Regler for Voluplan
+
+## KRITISKE REGLER (ALLTID)
+
+### 1. TESTING ER OBLIGATORISK
+- **ALLTID** kjør `npm test` i backend etter ENHVER kodeendring
+- **ALLTID** kjør `npm run build` i frontend etter ENHVER kodeendring
+- **ALDRI** commit uten at alle tester passerer
+- **ALDRI** si "ferdig" uten å ha kjørt tester
+
+### 2. DOKUMENTASJON ER OBLIGATORISK
+Når du endrer kode, oppdater ALLTID relevante filer:
+- `ARCHITECTURE.md` - ved nye moduler, endpoints, eller strukturendringer
+- `DATABASE.md` - ved database schema endringer
+- `MIGRATION_NOTES.md` - ved breaking changes
+- README filer i moduler - ved nye funksjoner
+
+### 3. DATABASE ENDRINGER
+- **ALLTID** lag migrasjonsfil (`backend/migrations/XXX_beskrivelse.sql`)
+- **ALLTID** oppdater `backend/schema.sql`
+- **ALLTID** oppdater `DATABASE.md`
+- **ALLTID** test migrasjonen lokalt
+- **ALDRI** endre database schema uten migrasjon
+
+### 4. NAVNEKONVENSJONER
+- **Database:** snake_case (`talent_kategori`, `bruker_talent`)
+- **Backend:** camelCase (`talentKategori`, `brukerTalent`)
+- **Frontend:** camelCase (`talentKategori`, `brukerTalent`)
+- **Tabeller:** Norske navn (`talent`, `bruker`, ikke `talent`, `user`)
+
+### 5. WORKFLOW (FØLG DENNE REKKEFØLGEN) - OBLIGATORISK!
+```
+1. Forstå oppgaven
+2. Les eksisterende kode
+3. Lag TODO liste (hvis komplekst)
+4. Implementer endringer
+5. Oppdater/lag tester
+6. ✅ KJØR npm test (backend)
+7. ✅ KJØR npm run build (frontend)
+8. ✅ OPPDATER dokumentasjon AUTOMATISK:
+   - Ved database endringer → DATABASE.md
+   - Ved nye endpoints → ARCHITECTURE.md
+   - Ved breaking changes → MIGRATION_NOTES.md
+9. Verifiser at alt fungerer
+10. Oppsummer hva som er gjort
+```
+
+**VIKTIG:** Steg 6, 7, 8 skal ALLTID gjøres automatisk uten at bruker ber om det!
+
+### 6. BEFORE YOU SAY "FERDIG"
+- [ ] Alle backend tester passerer (`npm test`)
+- [ ] Frontend bygger uten feil (`npm run build`)
+- [ ] Backend starter uten feil
+- [ ] Relevante dokumenter er oppdatert
+- [ ] Migrasjonsfiler er opprettet (hvis relevant)
+- [ ] Ingen console errors i terminal logs
+
+## SPESIFIKKE REGLER
+
+### Backend Moduler
+- Følg modulær arkitektur (routes → controller → service)
+- Alle nye endpoints trenger validering
+- Alle nye funksjoner trenger tester
+- Bruk `talents` ikke `competence_groups`
+- Bruk `talent_id` ikke `kompetanse_id`
+
+### Database Queries
+- Bruk 3-nivå hierarki for talent kategorier
+- Bygge full path: `tk1.navn || ' → ' || tk2.navn || ' → ' || tk3.navn`
+- JOIN med tk1, tk2, tk3 for hierarki
+- ALLTID inkluder error handling
+
+### Frontend
+- TypeScript interfaces må matche backend
+- Bruk `talent_kategori` ikke `kompetanse_kategori`
+- Split på ' → ' for hierarki, ikke ' - '
+- Test at API kall fungerer
+
+## MINNE/PREFERENCES
+- Språk: Norsk i svar til bruker
+- Database: PostgreSQL
+- Backend: Node.js/Express
+- Frontend: React/TypeScript/Material-UI
+- Alltid les terminal output etter kommandoer
+- Sjekk at servere ikke allerede kjører før oppstart
+
+## VED FEIL
+1. Les faktisk feilmelding (ikke gjettet)
+2. Sjekk terminal logs (`tail -50 /tmp/backend.log`)
+3. Kjør tester for å isolere problemet
+4. Fiks feilen
+5. Kjør tester igjen
+6. Verifiser at det fungerer
+
+## HUSKELISTE FOR AI
+Hvis bruker sier noe er "ferdig" men du ikke har:
+- ✅ Kjørt tester
+- ✅ Sjekket build
+- ✅ Oppdatert dokumentasjon
+- ✅ Verifisert i terminal
+
+Da er det IKKE ferdig!
+

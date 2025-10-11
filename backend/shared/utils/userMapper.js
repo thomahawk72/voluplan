@@ -13,7 +13,7 @@ const mapUserToResponse = (user) => {
     email: user.email,
     phoneNumber: user.phone_number,
     roles: user.roles || [],
-    competenceGroups: user.competence_groups || [],
+    talents: user.talents || [], // Renamed from competenceGroups
     isActive: user.is_active,
     createdAt: user.created_at,
   };

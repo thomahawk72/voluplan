@@ -137,8 +137,8 @@ const ProductionDetail: React.FC = () => {
 
   // Grupper bemanning per talent kategori (øverste nivå)
   const bemanningPerKategori = bemanning.reduce((acc, person) => {
-    // Bruk kun øverste nivå av kategori som gruppe-navn
-    const kategoriNavn = person.talent_kategori?.split(' - ')[0] || 'Ikke kategorisert';
+    // Bruk kun øverste nivå av kategori som gruppe-navn (før første →)
+    const kategoriNavn = person.talent_kategori?.split(' → ')[0] || 'Ikke kategorisert';
     if (!acc[kategoriNavn]) {
       acc[kategoriNavn] = [];
     }
@@ -234,7 +234,7 @@ const ProductionDetail: React.FC = () => {
             {produksjon.beskrivelse && (
               <Box sx={{ mb: 3 }}>
                 <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-                  Om produksjonen
+                  Beskrivelse
                 </Typography>
                 <Typography variant="body1" sx={{ color: 'text.secondary', lineHeight: 1.7 }}>
                   {produksjon.beskrivelse}

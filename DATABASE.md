@@ -1,7 +1,10 @@
 # Database Dokumentasjon - Voluplan
 
 ## Oversikt
-Voluplan bruker PostgreSQL som database for å håndtere brukere, kompetanser, produksjoner og bemanningsplanlegging.
+Voluplan bruker PostgreSQL som database for å håndtere brukere, talenter (3-nivå hierarki), produksjoner og bemanningsplanlegging.
+
+**Siste oppdatering:** 2025-10-11  
+**Versjon:** 007 (3-nivå talent hierarki + bruker-talent relasjon)
 
 ## Database Tabeller
 
@@ -14,8 +17,9 @@ Sentral tabell for alle brukere i systemet.
 - `last_name` (VARCHAR(100) NOT NULL) - Etternavn
 - `email` (VARCHAR(255) UNIQUE NOT NULL) - E-postadresse (unik)
 - `password_hash` (VARCHAR(255)) - Hashet passord (nullable for OAuth-brukere)
+- `phone_number` (VARCHAR(20)) - Mobilnummer
 - `roles` (TEXT[] DEFAULT '{}') - Array av brukerroller
-- `competence_groups` (TEXT[] DEFAULT '{}') - Array av kompetansegrupper
+- `talents` (TEXT[] DEFAULT '{}') - **Deprecated:** Bruk `bruker_talent` tabell i stedet
 - `is_active` (BOOLEAN DEFAULT true) - Om brukeren er aktiv
 - `google_id` (VARCHAR(255) UNIQUE) - Google OAuth ID
 - `facebook_id` (VARCHAR(255) UNIQUE) - Facebook OAuth ID
@@ -51,12 +55,94 @@ Håndterer tokens for passordgjenoppretting.
 
 ---
 
-### 3. `kompetansekategori` - Kategorier for kompetanser
-Organiserer kompetanser i overordnede kategorier (f.eks. "Lyd", "Lys", "Sceneteknikk").
+### 3. `talentkategori` - Hierarkiske kategorier for talenter (3 nivåer)
+Organiserer talenter i hierarkisk struktur: Root → Sub → Detail
+
+**Eksempel:**
+```
+Foto&Video (nivå 1)
+└─ Lyd (nivå 2)
+    └─ Band (nivå 3)
+        └─ Klassisk gitar (talent)
+```
 
 **Kolonner:**
 - `id` (SERIAL PRIMARY KEY)
-- `navn` (VARCHAR(100) UNIQUE NOT NULL) - Kategorinavn
+- `navn` (VARCHAR(100) NOT NULL) - Kategori navn
+- `parent_id` (INTEGER) - Referanse til overordnet kategori (NULL = root nivå)
+- `beskrivelse` (TEXT)
+- `created_at` (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+- `updated_at` (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+
+**Constraints:**
+- UNIQUE (`navn`, `parent_id`) - Samme navn kan brukes på forskjellige nivåer
+
+**Relasjoner:**
+- `parent_id` → `talentkategori.id` (ON DELETE CASCADE) - Self-referencing
+
+**Indekser:**
+- Primærnøkkel på `id`
+- Indeks på `parent_id`
+- Indeks på `navn`
+
+---
+
+### 4. `talent` - Spesifikke talenter/kompetanser
+Definerer spesifikke talenter som personer kan inneha.
+
+**Kolonner:**
+- `id` (SERIAL PRIMARY KEY)
+- `navn` (VARCHAR(100) NOT NULL) - Talent navn
+- `kategori_id` (INTEGER NOT NULL) - Referanse til `talentkategori.id`
+- `leder_id` (INTEGER) - Referanse til ansvarlig leder (`users.id`)
+- `beskrivelse` (TEXT) - Beskrivelse av talentet
+- `created_at` (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+- `updated_at` (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+
+**Relasjoner:**
+- `kategori_id` → `talentkategori.id` (ON DELETE RESTRICT)
+- `leder_id` → `users.id` (ON DELETE SET NULL)
+
+**Indekser:**
+- Primærnøkkel på `id`
+- Indeks på `kategori_id`
+- Indeks på `leder_id`
+
+---
+
+### 5. `bruker_talent` - Bruker-Talent Relasjon (Mange-til-mange)
+Kobler brukere til talenter de innehar. En person må ha et talent her før de kan bemennes med det.
+
+**Kolonner:**
+- `id` (SERIAL PRIMARY KEY)
+- `bruker_id` (INTEGER NOT NULL) - Referanse til `users.id`
+- `talent_id` (INTEGER NOT NULL) - Referanse til `talent.id`
+- `erfaringsnivaa` (VARCHAR(50) DEFAULT 'grunnleggende') - grunnleggende, middels, avansert, ekspert
+- `sertifisert` (BOOLEAN DEFAULT false) - Om brukeren er sertifisert
+- `notater` (TEXT) - Notater om brukerens erfaring
+- `created_at` (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+- `updated_at` (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+
+**Constraints:**
+- UNIQUE (`bruker_id`, `talent_id`) - En person kan bare ha samme talent én gang
+
+**Relasjoner:**
+- `bruker_id` → `users.id` (ON DELETE CASCADE)
+- `talent_id` → `talent.id` (ON DELETE CASCADE)
+
+**Indekser:**
+- Primærnøkkel på `id`
+- Indeks på `bruker_id`
+- Indeks på `talent_id`
+- Indeks på `erfaringsnivaa`
+
+**Forretningslogikk:**
+- En person må ha talentet i `bruker_talent` før de kan bemennes i `produksjon_bemanning`
+- Dette sikrer at kun kvalifiserte personer kan tildeles oppgaver
+
+---
+
+### 6. `produksjonskategori` - Kategorier for produksjoner
 - `beskrivelse` (TEXT) - Beskrivelse av kategorien
 - `created_at` (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
 - `updated_at` (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)

@@ -1,4 +1,4 @@
-const { validateEnv } = require('../../utils/envValidator');
+const { validateEnv } = require('../../shared/utils/envValidator');
 
 describe('Environment Validator', () => {
   let originalEnv;

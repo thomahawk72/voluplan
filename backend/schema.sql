@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
     google_id VARCHAR(255) UNIQUE,
     facebook_id VARCHAR(255) UNIQUE,
     roles TEXT[] DEFAULT '{}',
-    competence_groups TEXT[] DEFAULT '{}',
+    talents TEXT[] DEFAULT '{}',  -- Deprecated: Use bruker_talent table instead
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -45,6 +45,19 @@ CREATE TABLE IF NOT EXISTS talent (
     beskrivelse TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Bruker-talent koblingstabell (mange-til-mange)
+CREATE TABLE IF NOT EXISTS bruker_talent (
+    id SERIAL PRIMARY KEY,
+    bruker_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    talent_id INTEGER NOT NULL REFERENCES talent(id) ON DELETE CASCADE,
+    erfaringsnivaa VARCHAR(50) DEFAULT 'grunnleggende',
+    sertifisert BOOLEAN DEFAULT false,
+    notater TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (bruker_id, talent_id)
 );
 
 -- Produksjonskategori tabell
@@ -105,6 +118,9 @@ CREATE INDEX idx_talent_kategori_id ON talent(kategori_id);
 CREATE INDEX idx_talent_leder_id ON talent(leder_id);
 CREATE INDEX idx_talentkategori_parent_id ON talentkategori(parent_id);
 CREATE INDEX idx_talentkategori_navn ON talentkategori(navn);
+CREATE INDEX idx_bruker_talent_bruker_id ON bruker_talent(bruker_id);
+CREATE INDEX idx_bruker_talent_talent_id ON bruker_talent(talent_id);
+CREATE INDEX idx_bruker_talent_erfaringsnivaa ON bruker_talent(erfaringsnivaa);
 CREATE INDEX idx_produksjon_kategori_id ON produksjon(kategori_id);
 CREATE INDEX idx_produksjon_plan_id ON produksjon(plan_id);
 CREATE INDEX idx_produksjon_tid ON produksjon(tid);

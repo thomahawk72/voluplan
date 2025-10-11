@@ -362,18 +362,28 @@ const findBemanningByProduksjonId = async (produksjonId) => {
       t.navn as talent_navn,
       COALESCE(
         CASE 
-          WHEN tk.parent_id IS NOT NULL THEN 
-            (SELECT parent.navn FROM talentkategori parent WHERE parent.id = tk.parent_id) || ' - ' || tk.navn
-          ELSE tk.navn
+          WHEN tk3.parent_id IS NOT NULL AND tk2.parent_id IS NOT NULL THEN 
+            tk1.navn || ' → ' || tk2.navn || ' → ' || tk3.navn
+          WHEN tk3.parent_id IS NOT NULL THEN 
+            tk2.navn || ' → ' || tk3.navn
+          ELSE tk3.navn
         END, 
-        tk.navn
+        tk3.navn
       ) as talent_kategori
     FROM produksjon_bemanning pb
     JOIN users u ON pb.person_id = u.id
     JOIN talent t ON pb.talent_id = t.id
-    LEFT JOIN talentkategori tk ON t.kategori_id = tk.id
+    LEFT JOIN talentkategori tk3 ON t.kategori_id = tk3.id
+    LEFT JOIN talentkategori tk2 ON tk3.parent_id = tk2.id
+    LEFT JOIN talentkategori tk1 ON tk2.parent_id = tk1.id
     WHERE pb.produksjon_id = $1
-    ORDER BY tk.parent_id, tk.navn, t.navn, u.last_name, u.first_name`,
+    ORDER BY 
+      COALESCE(tk1.navn, tk2.navn, tk3.navn), 
+      COALESCE(tk2.navn, tk3.navn),
+      tk3.navn,
+      t.navn, 
+      u.last_name, 
+      u.first_name`,
     [produksjonId]
   );
   return result.rows;

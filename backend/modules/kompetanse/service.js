@@ -10,13 +10,13 @@ const db = require('../../shared/config/database');
 // ============================================================================
 
 /**
- * Finn alle talentkategorier (med hierarki)
+ * Finn alle talentkategorier (med hierarki - maks 3 nivåer)
  */
 const findAllKategorier = async () => {
   const result = await db.query(`
     WITH RECURSIVE category_hierarchy AS (
       -- Root kategorier (parent_id IS NULL)
-      SELECT id, navn, parent_id, beskrivelse, created_at, updated_at, 0 as level, navn as path
+      SELECT id, navn, parent_id, beskrivelse, created_at, updated_at, 0 as level, navn::text as path
       FROM talentkategori 
       WHERE parent_id IS NULL
       
@@ -24,10 +24,10 @@ const findAllKategorier = async () => {
       
       -- Child kategorier
       SELECT tk.id, tk.navn, tk.parent_id, tk.beskrivelse, tk.created_at, tk.updated_at, 
-             ch.level + 1, ch.path || ' - ' || tk.navn as path
+             ch.level + 1, (ch.path || ' → ' || tk.navn)::text as path
       FROM talentkategori tk
       INNER JOIN category_hierarchy ch ON tk.parent_id = ch.id
-      WHERE ch.level < 1 -- Maks 2 nivåer
+      WHERE ch.level < 2 -- Maks 3 nivåer (0, 1, 2)
     )
     SELECT * FROM category_hierarchy ORDER BY level, navn
   `);
@@ -108,7 +108,7 @@ const deleteKategori = async (id) => {
 // ============================================================================
 
 /**
- * Finn alle talenter
+ * Finn alle talenter (med 3-nivå hierarki)
  */
 const findAll = async (filters = {}) => {
   let query = `
@@ -116,18 +116,22 @@ const findAll = async (filters = {}) => {
       t.*,
       COALESCE(
         CASE 
-          WHEN tk.parent_id IS NOT NULL THEN 
-            (SELECT parent.navn FROM talentkategori parent WHERE parent.id = tk.parent_id) || ' - ' || tk.navn
-          ELSE tk.navn
+          WHEN tk3.parent_id IS NOT NULL AND tk2.parent_id IS NOT NULL THEN 
+            tk1.navn || ' → ' || tk2.navn || ' → ' || tk3.navn
+          WHEN tk3.parent_id IS NOT NULL THEN 
+            tk2.navn || ' → ' || tk3.navn
+          ELSE tk3.navn
         END, 
-        tk.navn
+        tk3.navn
       ) as kategori_navn,
-      tk.parent_id as kategori_parent_id,
+      tk3.parent_id as kategori_parent_id,
       u.first_name as leder_first_name,
       u.last_name as leder_last_name,
       u.email as leder_email
     FROM talent t
-    LEFT JOIN talentkategori tk ON t.kategori_id = tk.id
+    LEFT JOIN talentkategori tk3 ON t.kategori_id = tk3.id
+    LEFT JOIN talentkategori tk2 ON tk3.parent_id = tk2.id
+    LEFT JOIN talentkategori tk1 ON tk2.parent_id = tk1.id
     LEFT JOIN users u ON t.leder_id = u.id
   `;
   
@@ -149,14 +153,18 @@ const findAll = async (filters = {}) => {
     query += ' WHERE ' + conditions.join(' AND ');
   }
   
-  query += ' ORDER BY tk.parent_id, tk.navn, t.navn';
+  query += ` ORDER BY 
+    COALESCE(tk1.navn, tk2.navn, tk3.navn), 
+    COALESCE(tk2.navn, tk3.navn),
+    tk3.navn,
+    t.navn`;
   
   const result = await db.query(query, values);
   return result.rows;
 };
 
 /**
- * Finn talent basert på ID
+ * Finn talent basert på ID (med 3-nivå hierarki)
  */
 const findById = async (id) => {
   const result = await db.query(
@@ -164,18 +172,22 @@ const findById = async (id) => {
       t.*,
       COALESCE(
         CASE 
-          WHEN tk.parent_id IS NOT NULL THEN 
-            (SELECT parent.navn FROM talentkategori parent WHERE parent.id = tk.parent_id) || ' - ' || tk.navn
-          ELSE tk.navn
+          WHEN tk3.parent_id IS NOT NULL AND tk2.parent_id IS NOT NULL THEN 
+            tk1.navn || ' → ' || tk2.navn || ' → ' || tk3.navn
+          WHEN tk3.parent_id IS NOT NULL THEN 
+            tk2.navn || ' → ' || tk3.navn
+          ELSE tk3.navn
         END, 
-        tk.navn
+        tk3.navn
       ) as kategori_navn,
-      tk.parent_id as kategori_parent_id,
+      tk3.parent_id as kategori_parent_id,
       u.first_name as leder_first_name,
       u.last_name as leder_last_name,
       u.email as leder_email
     FROM talent t
-    LEFT JOIN talentkategori tk ON t.kategori_id = tk.id
+    LEFT JOIN talentkategori tk3 ON t.kategori_id = tk3.id
+    LEFT JOIN talentkategori tk2 ON tk3.parent_id = tk2.id
+    LEFT JOIN talentkategori tk1 ON tk2.parent_id = tk1.id
     LEFT JOIN users u ON t.leder_id = u.id
     WHERE t.id = $1`,
     [id]

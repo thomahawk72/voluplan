@@ -1,4 +1,4 @@
-const { mapUserToResponse, mapUsersToResponse } = require('../../utils/userMapper');
+const { mapUserToResponse, mapUsersToResponse } = require('../../shared/utils/userMapper');
 
 describe('User Mapper', () => {
   const mockDbUser = {
@@ -7,7 +7,7 @@ describe('User Mapper', () => {
     last_name: 'Doe',
     email: 'john@example.com',
     roles: ['user', 'admin'],
-    competence_groups: ['group1', 'group2'],
+    talents: ['group1', 'group2'],
     is_active: true,
     created_at: new Date('2024-01-01'),
     password_hash: 'hashed_password_should_not_be_included',
@@ -25,7 +25,7 @@ describe('User Mapper', () => {
         lastName: 'Doe',
         email: 'john@example.com',
         roles: ['user', 'admin'],
-        competenceGroups: ['group1', 'group2'],
+        talents: ['group1', 'group2'],
         isActive: true,
         createdAt: mockDbUser.created_at,
       });
@@ -46,7 +46,7 @@ describe('User Mapper', () => {
         last_name: 'Smith',
         email: 'jane@example.com',
         roles: [],
-        competence_groups: [],
+        talents: [],
         is_active: true,
         created_at: new Date('2024-01-02'),
       };
@@ -59,7 +59,7 @@ describe('User Mapper', () => {
         lastName: 'Smith',
         email: 'jane@example.com',
         roles: [],
-        competenceGroups: [],
+        talents: [],
         isActive: true,
         createdAt: minimalUser.created_at,
       });
@@ -76,7 +76,7 @@ describe('User Mapper', () => {
           last_name: 'Smith',
           email: 'jane@example.com',
           roles: ['user'],
-          competence_groups: [],
+          talents: [],
           is_active: false,
           created_at: new Date('2024-01-02'),
         },

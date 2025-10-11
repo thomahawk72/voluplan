@@ -31,7 +31,7 @@ describe('Database Configuration', () => {
   });
 
   it('skal registrere error handler for pool', () => {
-    require('../../config/database');
+    require('../../shared/config/database');
     
     expect(mockPool.on).toHaveBeenCalledWith('error', expect.any(Function));
   });
@@ -40,7 +40,7 @@ describe('Database Configuration', () => {
     const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
     const processExitSpy = jest.spyOn(process, 'exit').mockImplementation();
     
-    require('../../config/database');
+    require('../../shared/config/database');
     
     // Simuler en database error
     const testError = new Error('Database connection lost');
@@ -54,14 +54,14 @@ describe('Database Configuration', () => {
   });
 
   it('skal eksportere query funksjon', () => {
-    const db = require('../../config/database');
+    const db = require('../../shared/config/database');
     
     expect(db.query).toBeDefined();
     expect(typeof db.query).toBe('function');
   });
 
   it('skal eksportere pool', () => {
-    const db = require('../../config/database');
+    const db = require('../../shared/config/database');
     
     expect(db.pool).toBeDefined();
   });

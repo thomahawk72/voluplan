@@ -1,4 +1,4 @@
-const { createOAuthCallbackHandler } = require('../../utils/oauthHelpers');
+const { createOAuthCallbackHandler } = require('../../shared/utils/oauthHelpers');
 
 describe('OAuth Helpers', () => {
   describe('createOAuthCallbackHandler', () => {

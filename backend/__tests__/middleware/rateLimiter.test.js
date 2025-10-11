@@ -1,6 +1,6 @@
 const request = require('supertest');
 const express = require('express');
-const { createLoginLimiter, createPasswordResetLimiter } = require('../../middleware/rateLimiter');
+const { createLoginLimiter, createPasswordResetLimiter } = require('../../shared/middleware/rateLimiter');
 
 describe('Rate Limiter Middleware', () => {
   describe('Login Rate Limiter', () => {

@@ -11,7 +11,6 @@ import {
   Avatar,
   Menu,
   MenuItem,
-  Chip,
   List,
   ListItem,
   ListItemText,
@@ -21,7 +20,6 @@ import {
   Alert,
 } from '@mui/material';
 import {
-  People,
   Settings,
   Logout,
   AccountCircle,
@@ -220,35 +218,19 @@ const Dashboard: React.FC = () => {
                           <CalendarToday color="action" />
                         </ListItemIcon>
                         <ListItemText
-                          primary={
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                                {produksjon.navn}
-                              </Typography>
-                              {produksjon.kategori_navn && (
-                                <Chip
-                                  label={produksjon.kategori_navn}
-                                  color="primary"
-                                  size="small"
-                                  variant="outlined"
-                                  sx={{ height: 20 }}
-                                />
-                              )}
-                            </Box>
-                          }
+                          primary={produksjon.navn}
+                          primaryTypographyProps={{ 
+                            sx: { fontWeight: 500 } 
+                          }}
                           secondary={
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 0.5 }}>
-                              <Typography variant="body2" color="text.secondary">
-                                {formatDato(produksjon.tid)}
-                              </Typography>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                <People fontSize="small" color="action" />
-                                <Typography variant="body2" color="text.secondary">
-                                  {produksjon.antall_personer} personer
-                                </Typography>
-                              </Box>
-                            </Box>
+                            <React.Fragment>
+                              {formatDato(produksjon.tid)} • {produksjon.antall_personer} personer
+                              {produksjon.kategori_navn && ` • ${produksjon.kategori_navn}`}
+                            </React.Fragment>
                           }
+                          secondaryTypographyProps={{
+                            component: 'span'
+                          }}
                         />
                         <ChevronRight color="action" />
                       </ListItem>

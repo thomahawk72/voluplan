@@ -1,0 +1,41 @@
+#!/bin/sh
+
+echo "🔍 Running pre-commit checks..."
+
+# 1. Kjør alle backend tester
+echo "📝 Running backend tests..."
+cd backend && npm test -- --passWithNoTests
+if [ $? -ne 0 ]; then
+  echo "❌ Backend tests failed!"
+  exit 1
+fi
+cd ..
+
+# 2. Kjør frontend build (sjekker kompilering)
+echo "🏗️  Building frontend..."
+cd frontend && npm run build > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+  echo "❌ Frontend build failed!"
+  exit 1
+fi
+cd ..
+
+# 3. Sjekk at dokumentasjon er oppdatert (kun notis, blokkerer ikke)
+echo "📚 Checking documentation..."
+if git diff --cached --name-only | grep -E "(backend/modules|backend/shared|backend/migrations)" > /dev/null; then
+  if ! git diff --cached --name-only | grep -E "(ARCHITECTURE.md|DATABASE.md|MIGRATION_NOTES.md)" > /dev/null; then
+    echo ""
+    echo "📝 NOTIS: Kode-endringer detektert uten dokumentasjons-oppdateringer"
+    echo "   Vurder å oppdatere:"
+    echo "   - ARCHITECTURE.md (ved nye moduler/endpoints)"
+    echo "   - DATABASE.md (ved schema endringer)"
+    echo "   - MIGRATION_NOTES.md (ved breaking changes)"
+    echo ""
+    echo "   💡 TIP: Be AI om å oppdatere dokumentasjon automatisk!"
+    echo ""
+  fi
+fi
+
+echo "✅ All pre-commit checks passed!"
+exit 0
+

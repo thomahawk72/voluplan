@@ -1,4 +1,4 @@
-const { asyncHandler, handleError } = require('../../utils/errorHandler');
+const { asyncHandler, handleError } = require('../../shared/utils/errorHandler');
 
 describe('Error Handler Utils', () => {
   describe('asyncHandler', () => {

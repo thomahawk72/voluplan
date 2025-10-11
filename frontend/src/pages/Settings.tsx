@@ -27,6 +27,7 @@ import { TalentKategori, Talent } from '../services/api';
 import { useTalentData } from '../hooks/useTalentData';
 import TalentTree from '../components/settings/TalentTree';
 import TalentDialog from '../components/settings/TalentDialog';
+import UserManagement from '../components/settings/UserManagement';
 
 const Settings: React.FC = () => {
   const navigate = useNavigate();
@@ -55,6 +56,7 @@ const Settings: React.FC = () => {
   const [selectedItem, setSelectedItem] = useState<TalentKategori | Talent | null>(null);
   const [initialParentId, setInitialParentId] = useState<number | undefined>();
   const [initialKategoriId, setInitialKategoriId] = useState<number | undefined>();
+  const [activeTab, setActiveTab] = useState<'talent' | 'produksjon' | 'brukere'>('talent');
 
   const toggleKategori = (kategoriId: number) => {
     setApneKategorier(prev => {
@@ -173,10 +175,19 @@ const Settings: React.FC = () => {
 
         {/* Oversikt Cards */}
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 3, mb: 4 }}>
-          <Card sx={{ boxShadow: 3 }}>
+          <Card 
+            sx={{ 
+              boxShadow: 3, 
+              cursor: 'pointer',
+              border: activeTab === 'talent' ? 2 : 0,
+              borderColor: 'primary.main',
+              '&:hover': { boxShadow: 6 }
+            }}
+            onClick={() => setActiveTab('talent')}
+          >
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <Category color="primary" />
+                <Category color={activeTab === 'talent' ? 'primary' : 'action'} />
                 <Typography variant="h6">Talent & Kategorier</Typography>
               </Box>
               <Typography variant="body2" color="text.secondary">
@@ -184,7 +195,9 @@ const Settings: React.FC = () => {
               </Typography>
             </CardContent>
             <CardActions>
-              <Button size="small" disabled>Aktiv</Button>
+              <Button size="small" disabled={activeTab === 'talent'}>
+                {activeTab === 'talent' ? 'Aktiv' : 'Vis'}
+              </Button>
             </CardActions>
           </Card>
 
@@ -203,10 +216,19 @@ const Settings: React.FC = () => {
             </CardActions>
           </Card>
 
-          <Card sx={{ boxShadow: 3, opacity: 0.6 }}>
+          <Card 
+            sx={{ 
+              boxShadow: 3,
+              cursor: 'pointer',
+              border: activeTab === 'brukere' ? 2 : 0,
+              borderColor: 'primary.main',
+              '&:hover': { boxShadow: 6 }
+            }}
+            onClick={() => setActiveTab('brukere')}
+          >
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <People color="action" />
+                <People color={activeTab === 'brukere' ? 'primary' : 'action'} />
                 <Typography variant="h6">Brukere</Typography>
               </Box>
               <Typography variant="body2" color="text.secondary">
@@ -214,47 +236,61 @@ const Settings: React.FC = () => {
               </Typography>
             </CardContent>
             <CardActions>
-              <Button size="small" disabled>Kommer snart</Button>
+              <Button size="small" disabled={activeTab === 'brukere'}>
+                {activeTab === 'brukere' ? 'Aktiv' : 'Vis'}
+              </Button>
             </CardActions>
           </Card>
         </Box>
 
         {/* Talent Hierarki */}
-        <Paper sx={{ p: 3, boxShadow: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-            <Typography variant="h5" sx={{ fontWeight: 600 }}>
-              Talent Hierarki
-            </Typography>
-            <Button
-              variant="contained"
-              startIcon={<Add />}
-              onClick={() => openCreateKategoriDialog()}
-            >
-              Ny root-kategori
-            </Button>
-          </Box>
-
-          {loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-              <CircularProgress />
+        {activeTab === 'talent' && (
+          <Paper sx={{ p: 3, boxShadow: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+              <Typography variant="h5" sx={{ fontWeight: 600 }}>
+                Talent Hierarki
+              </Typography>
+              <Button
+                variant="contained"
+                startIcon={<Add />}
+                onClick={() => openCreateKategoriDialog()}
+              >
+                Ny root-kategori
+              </Button>
             </Box>
-          ) : (
-            <TalentTree
-              kategorier={kategorier}
-              talenter={talenter}
-              apneKategorier={apneKategorier}
-              onToggle={toggleKategori}
-              onEditKategori={openEditKategoriDialog}
-              onDeleteKategori={handleDeleteKategori}
-              onCreateSubKategori={openCreateKategoriDialog}
-              onCreateTalent={openCreateTalentDialog}
-              onEditTalent={openEditTalentDialog}
-              onDeleteTalent={handleDeleteTalent}
-              getChildren={getChildren}
-              getTalenterForKategori={getTalenterForKategori}
-            />
-          )}
-        </Paper>
+
+            {loading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                <CircularProgress />
+              </Box>
+            ) : (
+              <TalentTree
+                kategorier={kategorier}
+                talenter={talenter}
+                apneKategorier={apneKategorier}
+                onToggle={toggleKategori}
+                onEditKategori={openEditKategoriDialog}
+                onDeleteKategori={handleDeleteKategori}
+                onCreateSubKategori={openCreateKategoriDialog}
+                onCreateTalent={openCreateTalentDialog}
+                onEditTalent={openEditTalentDialog}
+                onDeleteTalent={handleDeleteTalent}
+                getChildren={getChildren}
+                getTalenterForKategori={getTalenterForKategori}
+              />
+            )}
+          </Paper>
+        )}
+
+        {/* Bruker Administrasjon */}
+        {activeTab === 'brukere' && (
+          <Paper sx={{ p: 3, boxShadow: 3 }}>
+            <Typography variant="h5" sx={{ fontWeight: 600, mb: 3 }}>
+              Brukeradministrasjon
+            </Typography>
+            <UserManagement />
+          </Paper>
+        )}
       </Container>
 
       {/* Create/Edit Dialog */}

@@ -216,6 +216,17 @@ const findOrCreateOAuthUser = async (profile, provider) => {
   return result.rows[0];
 };
 
+/**
+ * Slett flere brukere
+ */
+const bulkRemove = async (userIds) => {
+  const result = await db.query(
+    'DELETE FROM users WHERE id = ANY($1) RETURNING id',
+    [userIds]
+  );
+  return result.rows;
+};
+
 module.exports = {
   findByEmail,
   findById,
@@ -223,6 +234,7 @@ module.exports = {
   create,
   update,
   remove,
+  bulkRemove,
   verifyPassword,
   hashPassword,
   updatePassword,

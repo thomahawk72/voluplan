@@ -583,21 +583,33 @@ frontend/src/
 
 ### Innstillinger (`/settings`)
 **Funksjonalitet:**
-- **Talent & Kategorier (aktiv):**
-  - Hierarkisk tre-visning (fleksibel dybde)
-  - Opprett/rediger/slett kategorier på ethvert nivå
-  - Opprett/rediger/slett talenter på ethvert nivå
-  - **Regel:** En kategori kan ha ENTEN sub-kategorier ELLER talenter (ikke begge)
-  - Visuelt skille mellom nivåer med farge-koding
-  - Automatisk skjuling av "Legg til sub-kategori" hvis kategori har talenter
-  - Automatisk skjuling av "Legg til talent" hvis kategori har sub-kategorier
-- **Produksjonskategorier (kommer snart)**
-- **Brukere (kommer snart)**
+
+**Tab 1: Talent & Kategorier (✅ AKTIV)**
+- Hierarkisk tre-visning (fleksibel dybde)
+- Opprett/rediger/slett kategorier på ethvert nivå
+- Opprett/rediger/slett talenter på ethvert nivå
+- **Regel:** En kategori kan ha ENTEN sub-kategorier ELLER talenter (ikke begge)
+- Visuelt skille mellom nivåer med farge-koding
+- Automatisk skjuling av "Legg til sub-kategori" hvis kategori har talenter
+- Automatisk skjuling av "Legg til talent" hvis kategori har sub-kategorier
+
+**Tab 2: Produksjonskategorier (kommer snart)**
+
+**Tab 3: Brukere (✅ AKTIV)**
+- Liste alle brukere i tabell
+- Søk etter navn, e-post
+- Filtrer på talentkategori
+- Slett enkelt bruker
+- Bulk-sletting (flere brukere samtidig)
+- Viser roller, telefon, status
+- Sletting tillatt selv om bruker er i produksjon (CASCADE)
 
 **UI Design:**
-- Rekursiv tre-struktur med collapse/expand
+- Tab-basert navigasjon mellom seksjoner
+- Talent: Rekursiv tre-struktur med collapse/expand
+- Brukere: Tabell med søk, filter og bulk actions
 - Farge-koding per nivå (gradvis lysere)
-- Inline edit/delete knapper på alle nivåer
+- Inline edit/delete knapper
 - Dialog for create/edit
 - Intelligente feilmeldinger ved validering
 

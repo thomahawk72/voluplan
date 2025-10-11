@@ -195,6 +195,22 @@ router.delete(
   controller.remove
 );
 
+/**
+ * POST /api/users/bulk-delete
+ * Slett flere brukere (kun admin)
+ */
+router.post(
+  '/users/bulk-delete',
+  authenticateToken,
+  requireRole(['admin']),
+  [
+    body('userIds').isArray().withMessage('userIds må være en array'),
+    body('userIds.*').isInt().withMessage('Alle user IDs må være tall'),
+  ],
+  validate,
+  controller.bulkDelete
+);
+
 module.exports = router;
 
 

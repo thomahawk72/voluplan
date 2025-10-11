@@ -44,7 +44,9 @@ export interface User {
   email: string;
   phoneNumber?: string;
   roles: string[];
-  competenceGroups: string[];
+  talents: string[];
+  isActive?: boolean;
+  createdAt?: string;
 }
 
 export interface AuthResponse {
@@ -252,6 +254,28 @@ export const talentAPI = {
 
   delete: async (id: number): Promise<void> => {
     await api.delete(`/kompetanse/${id}`);
+  },
+};
+
+// User API
+export const userAPI = {
+  getAll: async (): Promise<{ users: User[] }> => {
+    const response = await api.get('/users');
+    return response.data;
+  },
+
+  getById: async (id: number): Promise<{ user: User }> => {
+    const response = await api.get(`/users/${id}`);
+    return response.data;
+  },
+
+  delete: async (id: number): Promise<void> => {
+    await api.delete(`/users/${id}`);
+  },
+
+  bulkDelete: async (userIds: number[]): Promise<{ message: string; deletedIds: number[] }> => {
+    const response = await api.post('/users/bulk-delete', { userIds });
+    return response.data;
   },
 };
 

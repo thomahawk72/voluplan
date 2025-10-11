@@ -328,6 +328,31 @@ const handleOAuthCallback = (req, res) => {
   }
 };
 
+/**
+ * POST /api/users/bulk-delete
+ * Slett flere brukere samtidig
+ */
+const bulkDelete = async (req, res) => {
+  try {
+    const { userIds } = req.body;
+    
+    // Ikke tillat å slette seg selv
+    if (userIds.includes(req.user.id)) {
+      return res.status(400).json({ error: 'Du kan ikke slette deg selv' });
+    }
+    
+    const deleted = await service.bulkRemove(userIds);
+    
+    res.json({ 
+      message: `${deleted.length} brukere slettet`,
+      deletedIds: deleted.map(u => u.id)
+    });
+  } catch (error) {
+    console.error('[BRUKER] Bulk delete error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 module.exports = {
   generateToken,
   login,
@@ -340,6 +365,7 @@ module.exports = {
   create,
   update,
   remove,
+  bulkDelete,
   handleOAuthCallback,
 };
 

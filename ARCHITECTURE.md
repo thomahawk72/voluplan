@@ -25,12 +25,12 @@ backend/
 │   │   ├── model.js      # Bruker datamodell
 │   │   └── __tests__/    # Tester for brukermodul
 │   │
-│   ├── kompetanse/       # Kompetansemodul
-│   │   ├── routes.js     # API routes for kompetanser
-│   │   ├── controller.js # Kompetanselogikk
+│   ├── kompetanse/       # Talentmodul (tidligere kompetansemodul)
+│   │   ├── routes.js     # API routes for talenter
+│   │   ├── controller.js # Talentlogikk
 │   │   ├── service.js    # Database-operasjoner
-│   │   ├── model.js      # Kompetanse datamodell
-│   │   └── __tests__/    # Tester for kompetansemodul
+│   │   ├── model.js      # Talent datamodell
+│   │   └── __tests__/    # Tester for talentmodul
 │   │
 │   └── produksjon/       # Produksjonsmodul
 │       ├── routes.js     # API routes for produksjoner
@@ -100,38 +100,50 @@ DELETE /api/users/:id               # Slett bruker
 
 ---
 
-### 2. Kompetansemodul (`modules/kompetanse`)
+### 2. Talentmodul (`modules/kompetanse`)
 
 **Ansvar:**
-- Administrere kompetansekategorier
-- Administrere kompetanser
-- Knytte kompetanser til brukere
-- Kompetanseoversikter
+- Administrere talentkategorier (hierarkisk struktur, maks 2 nivåer)
+- Administrere talenter
+- Knytte talenter til brukere
+- Talentoversikter
 
 **API Endpoints:**
 ```
 # Kategorier
-GET    /api/kompetanse/kategorier              # Liste kategorier
+GET    /api/kompetanse/kategorier              # Liste kategorier (med hierarki)
 GET    /api/kompetanse/kategorier/:id          # Hent kategori
-POST   /api/kompetanse/kategorier              # Opprett kategori
+POST   /api/kompetanse/kategorier              # Opprett kategori (kan ha parent_id)
 PUT    /api/kompetanse/kategorier/:id          # Oppdater kategori
 DELETE /api/kompetanse/kategorier/:id          # Slett kategori
 
-# Kompetanser
-GET    /api/kompetanse                         # Liste kompetanser
-GET    /api/kompetanse/:id                     # Hent kompetanse
-POST   /api/kompetanse                         # Opprett kompetanse
-PUT    /api/kompetanse/:id                     # Oppdater kompetanse
-DELETE /api/kompetanse/:id                     # Slett kompetanse
+# Talenter
+GET    /api/kompetanse                         # Liste talenter
+GET    /api/kompetanse/:id                     # Hent talent
+POST   /api/kompetanse                         # Opprett talent
+PUT    /api/kompetanse/:id                     # Oppdater talent
+DELETE /api/kompetanse/:id                     # Slett talent
 
 # Tilknytninger
-GET    /api/kompetanse/bruker/:userId          # Kompetanser for bruker
-GET    /api/kompetanse/:id/brukere             # Brukere med kompetanse
+GET    /api/kompetanse/bruker/:userId          # Talenter for bruker
+GET    /api/kompetanse/:id/brukere             # Brukere med talent
 ```
 
 **Database-tabeller:**
-- `kompetansekategori`
-- `kompetanse`
+- `talentkategori` (med `parent_id` for hierarki)
+- `talent`
+
+**Hierarkisk struktur eksempel:**
+```
+Kreativ (root kategori)
+├── Band (sub-kategori)
+│   ├── Klassisk gitar (talent)
+│   ├── Elektrisk gitar (talent)
+│   └── Bassist (talent)
+└── Vokal (sub-kategori)
+    ├── Sopran (talent)
+    └── Alt (talent)
+```
 
 **Avhengigheter:**
 - Brukermodul: Hente brukerinfo for ledere
@@ -173,7 +185,7 @@ DELETE /api/produksjon/:id                     # Slett produksjon
 
 # Bemanning
 GET    /api/produksjon/:id/bemanning           # Hent bemanning for produksjon
-POST   /api/produksjon/:id/bemanning           # Legg til person i produksjon
+POST   /api/produksjon/:id/bemanning           # Legg til person med talent i produksjon
 PUT    /api/produksjon/:id/bemanning/:bemanningId  # Oppdater bemanning
 DELETE /api/produksjon/:id/bemanning/:bemanningId  # Fjern person fra produksjon
 
@@ -191,8 +203,30 @@ GET    /api/produksjon/bruker/:userId          # Produksjoner for bruker
 
 **Avhengigheter:**
 - Brukermodul: Hente brukerinfo for bemanning
-- Kompetansemodul: Hente kompetanseinfo for bemanning
+- Talentmodul: Hente talentinfo for bemanning
 - Shared: middleware (auth)
+
+**Bemanning Data Struktur:**
+```javascript
+// POST /api/produksjon/:id/bemanning
+{
+  "personId": 1,
+  "talentId": 1,        // OBS: talentId, ikke kompetanseId
+  "notater": "Ansvarlig",
+  "status": "bekreftet"
+}
+
+// Response
+{
+  "id": 1,
+  "produksjon_id": 1,
+  "person_id": 1,
+  "talent_id": 1,
+  "talent_navn": "FOH Lyd",
+  "talent_kategori": "Lyd - Band",  // Hierarkisk kategori-navn
+  "status": "bekreftet"
+}
+```
 
 ---
 
@@ -394,15 +428,23 @@ Hver modul har sine egne migrasjoner:
 
 ```
 migrations/
-├── 001_bruker_tables.sql
-├── 002_kompetanse_tables.sql
-├── 003_produksjon_tables.sql
-└── 004_rapportering_tables.sql
+├── 001_add_kompetanse_tables.sql           # Initial talent/kompetanse tabeller
+├── 002_add_produksjon_tables.sql           # Produksjonstabeller
+├── 003_add_phone_number.sql                # Telefonnummer til users
+├── 004_rename_to_talent_and_hierarchy.sql  # Kompetanse→Talent + hierarki
+└── 005_future_migration.sql
 ```
 
 Navnekonvensjon:
-- `XXX_modul_beskrivelse.sql`
+- `XXX_beskrivelse.sql`
 - XXX = sekvensnummer (001, 002, etc.)
+
+**Viktig migrasjon (004):**
+- Endret `kompetanse` → `talent`
+- Endret `kompetansekategori` → `talentkategori`
+- Lagt til hierarkisk struktur med `parent_id`
+- Oppdatert `produksjon_bemanning.kompetanse_id` → `talent_id`
+- Se `MIGRATION_NOTES.md` for detaljer
 
 ---
 
@@ -493,5 +535,31 @@ Modulær arkitektur gjør det enkelt å:
 - **Schema**: Se `DATABASE.md` for komplett oversikt over databaseskjema
 - **API-dokumentasjon**: Se modulens `routes.js` for API-kontrakt
 - **Eksempler**: Se eksisterende moduler for implementasjonseksempler
+- **Migrasjoner**: Se `MIGRATION_NOTES.md` for detaljer om kompetanse→talent endringen
+
+## Testing
+
+Alle moduler skal ha omfattende tester:
+
+### Eksempel: Produksjonsmodul
+```bash
+# Kjør alle produksjonstester
+npm test -- modules/produksjon
+
+# Service tests (12 tester)
+npm test -- modules/produksjon/__tests__/service.test.js
+
+# Integration tests (5 tester)
+npm test -- modules/produksjon/__tests__/routes.integration.test.js
+```
+
+**Testdekning mål:** >80% for alle moduler
+
+**Viktige ting å teste:**
+- ✅ API returnerer riktige felt (talent_id, IKKE kompetanse_id)
+- ✅ Hierarkisk kategori-navn konstrueres riktig
+- ✅ Database queries bruker riktige tabellnavn
+- ✅ Validering av input (talentId er påkrevd)
+- ✅ Feilhåndtering (500 errors, 404 not found, etc.)
 
 

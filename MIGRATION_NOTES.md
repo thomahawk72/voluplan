@@ -223,3 +223,56 @@ Hvis nødvendig, reverter endringer i omvendt rekkefølge:
 - [ ] Søk/filter på talent-kategorier
 - [ ] Export/import av talent-data
 
+---
+
+# Migrasjon 005-007: 3-nivå hierarki + Bruker-Talent relasjon
+
+## Dato: 2025-10-11
+
+### Migrasjon 005: Utvid til 3 nivåer
+- Oppdatert kommentarer for å dokumentere 3-nivå støtte
+- Ingen schema-endringer, kun dokumentasjon
+
+### Migrasjon 006: Cleanup gamle tabeller
+- Slettet `kompetanse` tabell
+- Slettet `kompetansekategori` tabell
+- **IRREVERSIBEL** - data allerede migrert i 004
+
+### Migrasjon 007: Bruker-Talent relasjon
+- Opprettet `bruker_talent` koblingstabell
+- Endret `users.competence_groups` → `users.talents`
+- **Breaking change:** Brukere må nå ha talent i `bruker_talent` før bemanning
+
+## Ny Database Struktur
+
+```
+users (brukere)
+  ↓
+bruker_talent (mange-til-mange)
+  ├─ erfaringsnivaa
+  ├─ sertifisert
+  └─ notater
+  ↓
+talent (spesifikke talenter)
+  ↓
+talentkategori (3-nivå hierarki)
+  └─ Foto&Video (nivå 1)
+      └─ Lyd (nivå 2)
+          └─ Band (nivå 3)
+```
+
+## Backend Endringer
+- Alle queries oppdatert til 3-nivå JOINs (tk1, tk2, tk3)
+- Path separator endret til ` → ` (arrow)
+- `competenceGroups` → `talents` i alle filer
+
+## Frontend Endringer
+- Gruppering på øverste nivå (før første →)
+- Skuff-funksjonalitet for kategorier
+- HTML nesting feil fikset i Dashboard
+
+## Testing
+- 41 tester passerer
+- Nye tester for talent-hierarki
+- Integration tester for bemanning med talentId
+

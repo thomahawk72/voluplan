@@ -133,17 +133,21 @@ GET    /api/kompetanse/:id/brukere             # Brukere med talent
 - `talentkategori` (med `parent_id` for hierarki)
 - `talent`
 
-**Hierarkisk struktur eksempel:**
+**Hierarkisk struktur eksempel (fleksibel dybde):**
 ```
-Kreativ (root kategori)
-├── Band (sub-kategori)
-│   ├── Klassisk gitar (talent)
-│   ├── Elektrisk gitar (talent)
-│   └── Bassist (talent)
-└── Vokal (sub-kategori)
-    ├── Sopran (talent)
-    └── Alt (talent)
+Musikk (root)
+└─ Klassisk piano (talent på nivå 2)
+
+Kreativ (root)
+├── Vokal (sub)
+│   ├── Sopran (talent på nivå 3)
+│   └── Alt (talent på nivå 3)
+└── Instrumenter (sub)
+    └─ Gitar (detail)
+        └─ Klassisk gitar (talent på nivå 4)
 ```
+
+**Viktig regel:** En kategori kan enten ha sub-kategorier ELLER talenter, ikke begge!
 
 **Avhengigheter:**
 - Brukermodul: Hente brukerinfo for ledere
@@ -530,6 +534,40 @@ Modulær arkitektur gjør det enkelt å:
 
 ---
 
+## Frontend Arkitektur
+
+### Komponent-struktur (maks 300 linjer per fil)
+
+```
+frontend/src/
+├── pages/              # Side-komponenter (<300 linjer hver)
+│   ├── Dashboard.tsx (330 linjer)
+│   ├── ProductionDetail.tsx (176 linjer) ✅
+│   ├── Settings.tsx (277 linjer) ✅
+│   └── Login.tsx (233 linjer) ✅
+│
+├── components/         # Gjenbrukbare komponenter
+│   ├── production/
+│   │   ├── ProductionHeader.tsx (112 linjer)
+│   │   ├── EmployeeCard.tsx (204 linjer)
+│   │   └── PlanCard.tsx (63 linjer)
+│   └── settings/
+│       ├── TalentTree.tsx (159 linjer)
+│       ├── TalentList.tsx (59 linjer)
+│       └── TalentDialog.tsx (165 linjer)
+│
+└── hooks/              # Custom React hooks
+    ├── useProductionData.ts (73 linjer)
+    └── useTalentData.ts (90 linjer)
+```
+
+**Regel:** Når en fil nærmer seg 300 linjer:
+1. Ekstraher logikk til custom hooks
+2. Splitt UI i sub-komponenter
+3. Flytt staten nærmere der den brukes
+
+---
+
 ## Frontend Sider
 
 ### Dashboard (`/dashboard`)
@@ -546,18 +584,22 @@ Modulær arkitektur gjør det enkelt å:
 ### Innstillinger (`/settings`)
 **Funksjonalitet:**
 - **Talent & Kategorier (aktiv):**
-  - Hierarkisk tre-visning (3 nivåer)
-  - Opprett/rediger/slett kategorier
-  - Opprett/rediger/slett talenter
-  - Visuelt skille mellom root, sub og detail-kategorier
+  - Hierarkisk tre-visning (fleksibel dybde)
+  - Opprett/rediger/slett kategorier på ethvert nivå
+  - Opprett/rediger/slett talenter på ethvert nivå
+  - **Regel:** En kategori kan ha ENTEN sub-kategorier ELLER talenter (ikke begge)
+  - Visuelt skille mellom nivåer med farge-koding
+  - Automatisk skjuling av "Legg til sub-kategori" hvis kategori har talenter
+  - Automatisk skjuling av "Legg til talent" hvis kategori har sub-kategorier
 - **Produksjonskategorier (kommer snart)**
 - **Brukere (kommer snart)**
 
 **UI Design:**
-- Tre-struktur med collapse/expand
-- Farge-koding per nivå (Primary → Secondary → Info)
-- Inline edit/delete knapper
+- Rekursiv tre-struktur med collapse/expand
+- Farge-koding per nivå (gradvis lysere)
+- Inline edit/delete knapper på alle nivåer
 - Dialog for create/edit
+- Intelligente feilmeldinger ved validering
 
 ## Ressurser
 

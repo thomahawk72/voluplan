@@ -55,10 +55,22 @@ Håndterer tokens for passordgjenoppretting.
 
 ---
 
-### 3. `talentkategori` - Hierarkiske kategorier for talenter (3 nivåer)
-Organiserer talenter i hierarkisk struktur: Root → Sub → Detail
+### 3. `talentkategori` - Hierarkiske kategorier for talenter (fleksibel dybde)
+Organiserer talenter i hierarkisk struktur. Talenter kan legges på ethvert nivå.
 
-**Eksempel:**
+**Viktig regel:** En kategori kan enten ha:
+- Sub-kategorier (children), ELLER
+- Talenter
+
+**IKKE begge deler samtidig!**
+
+**Eksempel 1 (talent på nivå 2):**
+```
+Musikk (nivå 1)
+└─ Klassisk piano (talent direkte under)
+```
+
+**Eksempel 2 (3 nivåer):**
 ```
 Foto&Video (nivå 1)
 └─ Lyd (nivå 2)

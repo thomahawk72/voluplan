@@ -50,6 +50,17 @@ const getKategori = async (req, res) => {
 const createKategori = async (req, res) => {
   try {
     const { navn, parentId, beskrivelse } = req.body;
+    
+    // Sjekk at parent ikke har talenter (kan ikke ha både sub-kategorier og talenter)
+    if (parentId) {
+      const talenterIParen = await service.findAll({ kategoriId: parentId });
+      if (talenterIParen.length > 0) {
+        return res.status(400).json({ 
+          error: 'Kan ikke opprette sub-kategori. Kategorien har allerede talenter. En kategori kan ikke ha både talenter og sub-kategorier.' 
+        });
+      }
+    }
+    
     const kategori = await service.createKategori({ navn, parentId, beskrivelse });
     res.status(201).json({ kategori });
   } catch (error) {
@@ -162,6 +173,17 @@ const get = async (req, res) => {
 const create = async (req, res) => {
   try {
     const { navn, kategoriId, lederId, beskrivelse } = req.body;
+    
+    // Sjekk at kategorien ikke har sub-kategorier (kan ikke ha både talenter og sub-kategorier)
+    const subKategorier = await service.findAllKategorier();
+    const harSubKategorier = subKategorier.some(k => k.parent_id === kategoriId);
+    
+    if (harSubKategorier) {
+      return res.status(400).json({ 
+        error: 'Kan ikke opprette talent. Kategorien har allerede sub-kategorier. En kategori kan ikke ha både talenter og sub-kategorier.' 
+      });
+    }
+    
     const kompetanse = await service.create({
       navn,
       kategoriId,
@@ -225,7 +247,7 @@ const remove = async (req, res) => {
   } catch (error) {
     console.error('[KOMPETANSE] Delete kompetanse error:', error);
     if (error.code === '23503') { // Foreign key violation
-      return res.status(400).json({ error: 'Kan ikke slette kompetanse som brukes i produksjoner' });
+      return res.status(400).json({ error: 'Kan ikke slette talent som brukes i produksjoner' });
     }
     res.status(500).json({ error: 'Internal server error' });
   }

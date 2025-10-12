@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -28,9 +28,11 @@ import { useTalentData } from '../hooks/useTalentData';
 import TalentTree from '../components/settings/TalentTree';
 import TalentDialog from '../components/settings/TalentDialog';
 import UserManagement from '../components/settings/UserManagement';
+import ConfirmDeleteTalentDialog from '../components/settings/ConfirmDeleteTalentDialog';
 
 const Settings: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const {
     kategorier,
     talenter,
@@ -56,7 +58,40 @@ const Settings: React.FC = () => {
   const [selectedItem, setSelectedItem] = useState<TalentKategori | Talent | null>(null);
   const [initialParentId, setInitialParentId] = useState<number | undefined>();
   const [initialKategoriId, setInitialKategoriId] = useState<number | undefined>();
-  const [activeTab, setActiveTab] = useState<'talent' | 'produksjon' | 'brukere'>('talent');
+  
+  // Delete confirmation state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteType, setDeleteType] = useState<'talent' | 'kategori'>('talent');
+  const [itemToDelete, setItemToDelete] = useState<{ id: number; navn: string; kategoriNavn?: string; childCount?: number } | null>(null);
+  
+  // Les activeTab fra URL, default til 'talent'
+  const getInitialTab = (): 'talent' | 'produksjon' | 'brukere' => {
+    const tabFromUrl = searchParams.get('tab');
+    if (tabFromUrl === 'brukere' || tabFromUrl === 'produksjon' || tabFromUrl === 'talent') {
+      return tabFromUrl;
+    }
+    return 'talent';
+  };
+
+  const [activeTab, setActiveTab] = useState<'talent' | 'produksjon' | 'brukere'>(getInitialTab);
+
+  // Oppdater URL når tab endres
+  useEffect(() => {
+    const currentTab = searchParams.get('tab');
+    if (currentTab !== activeTab) {
+      setSearchParams({ tab: activeTab }, { replace: true });
+    }
+  }, [activeTab, searchParams, setSearchParams]);
+
+  // Synkroniser med URL ved endringer (f.eks. browser back/forward)
+  useEffect(() => {
+    const tabFromUrl = searchParams.get('tab');
+    if (tabFromUrl && tabFromUrl !== activeTab) {
+      if (tabFromUrl === 'brukere' || tabFromUrl === 'produksjon' || tabFromUrl === 'talent') {
+        setActiveTab(tabFromUrl);
+      }
+    }
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleKategori = (kategoriId: number) => {
     setApneKategorier(prev => {
@@ -121,14 +156,37 @@ const Settings: React.FC = () => {
     }
   };
 
-  const handleDeleteKategori = async (id: number, navn: string) => {
-    if (!window.confirm(`Er du sikker på at du vil slette "${navn}"?`)) {
-      return;
-    }
+  const handleDeleteKategoriClick = (id: number, navn: string) => {
+    // Tell antall children (sub-kategorier + talents i denne kategorien)
+    const children = getChildren(id);
+    const talents = getTalenterForKategori(id);
+    const childCount = children.length + talents.length;
+    
+    setDeleteType('kategori');
+    setItemToDelete({ id, navn, childCount });
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteTalentClick = (id: number, navn: string, kategoriNavn?: string) => {
+    setDeleteType('talent');
+    setItemToDelete({ id, navn, kategoriNavn });
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!itemToDelete) return;
     
     try {
       setError(null);
-      await deleteKategori(id);
+      setDeleteDialogOpen(false);
+      
+      if (deleteType === 'kategori') {
+        await deleteKategori(itemToDelete.id);
+      } else {
+        await deleteTalent(itemToDelete.id);
+      }
+      
+      setItemToDelete(null);
     } catch (err: any) {
       const errorMsg = err.response?.data?.error || 'Kunne ikke slette. Vennligst prøv igjen.';
       setError(errorMsg);
@@ -136,19 +194,9 @@ const Settings: React.FC = () => {
     }
   };
 
-  const handleDeleteTalent = async (id: number, navn: string) => {
-    if (!window.confirm(`Er du sikker på at du vil slette "${navn}"?`)) {
-      return;
-    }
-    
-    try {
-      setError(null);
-      await deleteTalent(id);
-    } catch (err: any) {
-      const errorMsg = err.response?.data?.error || 'Kunne ikke slette. Vennligst prøv igjen.';
-      setError(errorMsg);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setItemToDelete(null);
   };
 
   return (
@@ -243,12 +291,12 @@ const Settings: React.FC = () => {
           </Card>
         </Box>
 
-        {/* Talent Hierarki */}
+        {/* Talenthierarki */}
         {activeTab === 'talent' && (
           <Paper sx={{ p: 3, boxShadow: 3 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
               <Typography variant="h5" sx={{ fontWeight: 600 }}>
-                Talent Hierarki
+                Talenthierarki
               </Typography>
               <Button
                 variant="contained"
@@ -270,11 +318,11 @@ const Settings: React.FC = () => {
                 apneKategorier={apneKategorier}
                 onToggle={toggleKategori}
                 onEditKategori={openEditKategoriDialog}
-                onDeleteKategori={handleDeleteKategori}
+                onDeleteKategori={handleDeleteKategoriClick}
                 onCreateSubKategori={openCreateKategoriDialog}
                 onCreateTalent={openCreateTalentDialog}
                 onEditTalent={openEditTalentDialog}
-                onDeleteTalent={handleDeleteTalent}
+                onDeleteTalent={handleDeleteTalentClick}
                 getChildren={getChildren}
                 getTalenterForKategori={getTalenterForKategori}
               />
@@ -306,6 +354,19 @@ const Settings: React.FC = () => {
         initialParentId={initialParentId}
         initialKategoriId={initialKategoriId}
       />
+
+      {/* Delete Confirmation Dialog */}
+      {itemToDelete && (
+        <ConfirmDeleteTalentDialog
+          open={deleteDialogOpen}
+          onClose={handleDeleteCancel}
+          onConfirm={handleDeleteConfirm}
+          type={deleteType}
+          itemName={itemToDelete.navn}
+          kategoriNavn={itemToDelete.kategoriNavn}
+          childCount={itemToDelete.childCount}
+        />
+      )}
     </Box>
   );
 };

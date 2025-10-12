@@ -85,13 +85,26 @@ POST   /api/auth/reset-password     # Tilbakestill passord
 GET    /api/users                   # Liste brukere
 GET    /api/users/:id               # Hent bruker
 POST   /api/users                   # Opprett bruker
-PUT    /api/users/:id               # Oppdater bruker
+PUT    /api/users/:id               # Oppdater bruker (inkl. e-post med sikkerhet)
 DELETE /api/users/:id               # Slett bruker
+POST   /api/users/bulk-delete       # Slett flere brukere samtidig
+
+# Bruker-talent relasjoner
+GET    /api/users/:id/talents       # Hent brukerens talents
+POST   /api/users/:id/talents       # Legg til talent for bruker (default: avansert)
+PUT    /api/users/:userId/talents/:talentId  # Oppdater bruker-talent relasjon
+DELETE /api/users/:userId/talents/:talentId  # Fjern talent fra bruker
 ```
+
+**E-postendring sikkerhet (Hybrid-modell):**
+- **Admin endrer andres e-post**: Ingen passord nødvendig, men endringen logges
+- **Bruker med passord endrer sin egen**: Må bekrefte med nåværende passord
+- **OAuth/kun talent brukere**: Må kontakte admin for e-postendring
 
 **Database-tabeller:**
 - `users`
 - `password_reset_tokens`
+- `bruker_talent` (kobling mellom brukere og talents)
 
 **Avhengigheter:**
 - Shared: middleware (auth, rateLimiter)
@@ -599,6 +612,19 @@ frontend/src/
 - Liste alle brukere i tabell
 - Søk etter navn, e-post
 - Filtrer på talentkategori
+- **Opprett ny bruker** via dialog
+- **Rediger bruker** via dialog (klikk på rad eller rediger-knapp)
+- **Vis/administrer brukerens talents** via dialog:
+  - **Quick-add**: Søk og velg talent → legges automatisk til med "avansert" som default
+  - **Kompakte kort**: Expandable talent-kort med minimal plass
+  - **Inline editing**: Endre erfaringsnivå (grunnleggende, middels, avansert, ekspert) direkte
+  - **Notater**: Legge til notater om erfaring per talent
+  - **Auto-save**: Talents lagres automatisk i edit mode
+  - Fjerne talents med ett klikk
+- **Aktiv/Inaktiv status**:
+  - **Aktiv bruker**: Kan logge inn i applikasjonen
+  - **Kun talent**: Registrert som person med talents, men kan ikke logge inn
+  - Visuelt skille med ikoner og farger (⚠️ ikon for "kun talent")
 - Slett enkelt bruker
 - Bulk-sletting (flere brukere samtidig)
 - Viser roller, telefon, status
@@ -607,10 +633,22 @@ frontend/src/
 **UI Design:**
 - Tab-basert navigasjon mellom seksjoner
 - Talent: Rekursiv tre-struktur med collapse/expand
-- Brukere: Tabell med søk, filter og bulk actions
+- Brukere: 
+  - Tabell med søk, filter og bulk actions
+  - "Legg til bruker" knapp øverst
+  - Klikk på rad for å åpne detaljer/redigering
+  - Edit/delete knapper per rad
+  - Visuelt skille mellom aktive brukere og "kun talent" personer
+- Dialog for brukerredigering:
+  - Grunnleggende info (navn, e-post, telefon)
+  - Roller (admin, user, viewer) - klikk for å toggle
+  - Aktiv/inaktiv toggle med tydelig forklaring og ikoner
+  - **Talent quick-add**: Autocomplete-søk som legger til umiddelbart
+  - **Expandable talent-kort**: Klikk for å vise/skjule detaljer
+  - Erfaringsnivå (default: avansert) per talent
+  - Notater per talent
+  - Dialog forblir åpen etter lagring for å legge til flere talents
 - Farge-koding per nivå (gradvis lysere)
-- Inline edit/delete knapper
-- Dialog for create/edit
 - Intelligente feilmeldinger ved validering
 
 ## Ressurser

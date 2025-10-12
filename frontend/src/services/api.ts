@@ -49,6 +49,18 @@ export interface User {
   createdAt?: string;
 }
 
+export interface UserTalent {
+  id: number;
+  bruker_id: number;
+  talent_id: number;
+  talent_navn: string;
+  kategori_id: number;
+  kategori_navn: string;
+  erfaringsnivaa: 'grunnleggende' | 'middels' | 'avansert' | 'ekspert';
+  notater?: string;
+  created_at: string;
+}
+
 export interface AuthResponse {
   token: string;
   user: User;
@@ -269,12 +281,65 @@ export const userAPI = {
     return response.data;
   },
 
+  create: async (userData: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phoneNumber?: string;
+    roles?: string[];
+    isActive?: boolean;
+  }): Promise<{ user: User }> => {
+    const response = await api.post('/users', userData);
+    return response.data;
+  },
+
+  update: async (id: number, userData: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    currentPassword?: string;
+    phoneNumber?: string;
+    roles?: string[];
+    isActive?: boolean;
+  }): Promise<{ user: User }> => {
+    const response = await api.put(`/users/${id}`, userData);
+    return response.data;
+  },
+
   delete: async (id: number): Promise<void> => {
     await api.delete(`/users/${id}`);
   },
 
   bulkDelete: async (userIds: number[]): Promise<{ message: string; deletedIds: number[] }> => {
     const response = await api.post('/users/bulk-delete', { userIds });
+    return response.data;
+  },
+
+  // Bruker-talent relasjoner
+  getUserTalents: async (userId: number): Promise<{ talents: UserTalent[] }> => {
+    const response = await api.get(`/users/${userId}/talents`);
+    return response.data;
+  },
+
+  addUserTalent: async (userId: number, talentData: {
+    talentId: number;
+    erfaringsnivaa?: 'grunnleggende' | 'middels' | 'avansert' | 'ekspert';
+    notater?: string;
+  }): Promise<{ talent: UserTalent }> => {
+    const response = await api.post(`/users/${userId}/talents`, talentData);
+    return response.data;
+  },
+
+  updateUserTalent: async (userId: number, talentId: number, talentData: {
+    erfaringsnivaa?: 'grunnleggende' | 'middels' | 'avansert' | 'ekspert';
+    notater?: string;
+  }): Promise<{ talent: UserTalent }> => {
+    const response = await api.put(`/users/${userId}/talents/${talentId}`, talentData);
+    return response.data;
+  },
+
+  removeUserTalent: async (userId: number, talentId: number): Promise<{ message: string }> => {
+    const response = await api.delete(`/users/${userId}/talents/${talentId}`);
     return response.data;
   },
 };

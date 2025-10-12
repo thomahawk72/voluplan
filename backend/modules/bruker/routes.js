@@ -176,6 +176,8 @@ router.put(
   [
     body('firstName').optional().trim().notEmpty(),
     body('lastName').optional().trim().notEmpty(),
+    body('email').optional().isEmail().normalizeEmail(),
+    body('currentPassword').optional().notEmpty(),
     body('roles').optional().isArray(),
     body('competenceGroups').optional().isArray(),
     body('isActive').optional().isBoolean(),
@@ -209,6 +211,64 @@ router.post(
   ],
   validate,
   controller.bulkDelete
+);
+
+// ============================================================================
+// BRUKER-TALENT RELASJONER
+// ============================================================================
+
+/**
+ * GET /api/users/:id/talents
+ * Hent alle talents for en bruker
+ */
+router.get(
+  '/users/:id/talents',
+  authenticateToken,
+  controller.getUserTalents
+);
+
+/**
+ * POST /api/users/:id/talents
+ * Legg til talent for bruker (kun admin)
+ */
+router.post(
+  '/users/:id/talents',
+  authenticateToken,
+  requireRole(['admin']),
+  [
+    body('talentId').isInt().withMessage('talentId må være et tall'),
+    body('erfaringsnivaa').optional().isIn(['grunnleggende', 'middels', 'avansert', 'ekspert']),
+    body('notater').optional().isString(),
+  ],
+  validate,
+  controller.addUserTalent
+);
+
+/**
+ * PUT /api/users/:userId/talents/:talentId
+ * Oppdater bruker-talent relasjon (kun admin)
+ */
+router.put(
+  '/users/:userId/talents/:talentId',
+  authenticateToken,
+  requireRole(['admin']),
+  [
+    body('erfaringsnivaa').optional().isIn(['grunnleggende', 'middels', 'avansert', 'ekspert']),
+    body('notater').optional().isString(),
+  ],
+  validate,
+  controller.updateUserTalent
+);
+
+/**
+ * DELETE /api/users/:userId/talents/:talentId
+ * Fjern talent fra bruker (kun admin)
+ */
+router.delete(
+  '/users/:userId/talents/:talentId',
+  authenticateToken,
+  requireRole(['admin']),
+  controller.removeUserTalent
 );
 
 module.exports = router;

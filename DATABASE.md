@@ -15,7 +15,7 @@ Sentral tabell for alle brukere i systemet.
 - `id` (SERIAL PRIMARY KEY) - Unik bruker-ID
 - `first_name` (VARCHAR(100) NOT NULL) - Fornavn
 - `last_name` (VARCHAR(100) NOT NULL) - Etternavn
-- `email` (VARCHAR(255) UNIQUE NOT NULL) - E-postadresse (unik)
+- `email` (VARCHAR(255) UNIQUE NOT NULL) - E-postadresse (unik, kan endres med sikkerhet)
 - `password_hash` (VARCHAR(255)) - Hashet passord (nullable for OAuth-brukere)
 - `phone_number` (VARCHAR(20)) - Mobilnummer
 - `roles` (TEXT[] DEFAULT '{}') - Array av brukerroller
@@ -25,6 +25,11 @@ Sentral tabell for alle brukere i systemet.
 - `facebook_id` (VARCHAR(255) UNIQUE) - Facebook OAuth ID
 - `created_at` (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
 - `updated_at` (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+
+**E-postendring sikkerhet:**
+- Brukere med passord må bekrefte med nåværende passord for å endre sin egen e-post
+- Admin kan endre andres e-post uten passord (endringen logges i backend)
+- OAuth/kun talent brukere må kontakte admin for e-postendring
 
 **Indekser:**
 - Primærnøkkel på `id`
@@ -129,11 +134,12 @@ Kobler brukere til talenter de innehar. En person må ha et talent her før de k
 - `id` (SERIAL PRIMARY KEY)
 - `bruker_id` (INTEGER NOT NULL) - Referanse til `users.id`
 - `talent_id` (INTEGER NOT NULL) - Referanse til `talent.id`
-- `erfaringsnivaa` (VARCHAR(50) DEFAULT 'grunnleggende') - grunnleggende, middels, avansert, ekspert
-- `sertifisert` (BOOLEAN DEFAULT false) - Om brukeren er sertifisert
+- `erfaringsnivaa` (VARCHAR(50) DEFAULT 'avansert') - grunnleggende, middels, avansert, ekspert (standard: avansert)
 - `notater` (TEXT) - Notater om brukerens erfaring
 - `created_at` (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
 - `updated_at` (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+
+**Merk:** Feltet `sertifisert` er fjernet da det ikke ga mening i konteksten.
 
 **Constraints:**
 - UNIQUE (`bruker_id`, `talent_id`) - En person kan bare ha samme talent én gang
@@ -151,6 +157,12 @@ Kobler brukere til talenter de innehar. En person må ha et talent her før de k
 **Forretningslogikk:**
 - En person må ha talentet i `bruker_talent` før de kan bemennes i `produksjon_bemanning`
 - Dette sikrer at kun kvalifiserte personer kan tildeles oppgaver
+- Brukere kan være registrert som:
+  - **Aktiv bruker** (`is_active = true`): Kan logge inn og bruke applikasjonen
+  - **Kun talent** (`is_active = false`): Registrert med talents, men kan ikke logge inn
+  
+**Eksempel bruk:**
+En person som kun skal være med i produksjoner (f.eks. frilansere, vikarer) kan registreres som "kun talent" uten å kunne logge inn i systemet.
 
 ---
 

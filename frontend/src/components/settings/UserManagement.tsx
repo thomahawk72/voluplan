@@ -18,13 +18,14 @@ import {
   InputAdornment,
   Alert,
 } from '@mui/material';
-import { Delete, Search, FilterList } from '@mui/icons-material';
+import { Delete, Search, FilterList, Add, Edit, PersonOff } from '@mui/icons-material';
 import { userAPI, talentAPI, User, TalentKategori } from '../../services/api';
+import UserDialog from './UserDialog';
+import ConfirmDeleteDialog from './ConfirmDeleteDialog';
 
 const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [kategorier, setKategorier] = useState<TalentKategori[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
   // Filter og søk
@@ -33,6 +34,14 @@ const UserManagement: React.FC = () => {
   
   // Valgte brukere
   const [selectedUsers, setSelectedUsers] = useState<Set<number>>(new Set());
+  
+  // Dialog state
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<number | undefined>(undefined);
+  
+  // Delete confirmation state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -40,7 +49,6 @@ const UserManagement: React.FC = () => {
 
   const fetchData = async () => {
     try {
-      setLoading(true);
       const [userData, kategoriData] = await Promise.all([
         userAPI.getAll(),
         talentAPI.getAllKategorier(),
@@ -50,37 +58,61 @@ const UserManagement: React.FC = () => {
     } catch (err: any) {
       console.error('Feil ved lasting av brukere:', err);
       setError('Kunne ikke laste brukere');
-    } finally {
-      setLoading(false);
     }
   };
 
-  const handleDelete = async (id: number, name: string) => {
-    if (!window.confirm(`Er du sikker på at du vil slette ${name}?`)) {
-      return;
-    }
+  const handleDeleteClick = (user: User) => {
+    setUserToDelete(user);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!userToDelete) return;
     
     try {
-      await userAPI.delete(id);
+      await userAPI.delete(userToDelete.id);
+      setDeleteDialogOpen(false);
+      setUserToDelete(null);
       await fetchData();
     } catch (err: any) {
       setError(err.response?.data?.error || 'Kunne ikke slette bruker');
+      setDeleteDialogOpen(false);
     }
   };
 
-  const handleBulkDelete = async () => {
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setUserToDelete(null);
+  };
+
+  const handleBulkDeleteClick = () => {
     if (selectedUsers.size === 0) return;
     
-    if (!window.confirm(`Er du sikker på at du vil slette ${selectedUsers.size} brukere?`)) {
-      return;
+    // Finn de valgte brukerne
+    const usersToDelete = users.filter(u => selectedUsers.has(u.id));
+    if (usersToDelete.length > 0) {
+      // Bruk første bruker som representant for bulk-sletting
+      setUserToDelete({
+        ...usersToDelete[0],
+        firstName: `${selectedUsers.size} brukere`,
+        lastName: '',
+      });
+      setDeleteDialogOpen(true);
     }
+  };
+
+  const handleBulkDeleteConfirm = async () => {
+    if (selectedUsers.size === 0) return;
     
     try {
       await userAPI.bulkDelete(Array.from(selectedUsers));
       setSelectedUsers(new Set());
+      setDeleteDialogOpen(false);
+      setUserToDelete(null);
       await fetchData();
     } catch (err: any) {
       setError(err.response?.data?.error || 'Kunne ikke slette brukere');
+      setDeleteDialogOpen(false);
     }
   };
 
@@ -104,6 +136,25 @@ const UserManagement: React.FC = () => {
     }
   };
 
+  const handleOpenDialog = (userId?: number) => {
+    setSelectedUserId(userId);
+    setDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setDialogOpen(false);
+    setSelectedUserId(undefined);
+  };
+
+  const handleDialogSave = async () => {
+    await fetchData();
+    // La dialogen forbli åpen slik at brukeren kan fortsette å legge til talents
+  };
+
+  const handleRowClick = (userId: number) => {
+    handleOpenDialog(userId);
+  };
+
   // Filtering
   const filteredUsers = users.filter(user => {
     const matchesSearch = searchTerm === '' || 
@@ -124,6 +175,18 @@ const UserManagement: React.FC = () => {
           {error}
         </Alert>
       )}
+
+      {/* Header med "Legg til bruker" knapp */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h6">Brukere</Typography>
+        <Button
+          variant="contained"
+          startIcon={<Add />}
+          onClick={() => handleOpenDialog()}
+        >
+          Legg til bruker
+        </Button>
+      </Box>
 
       {/* Søk og filter */}
       <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
@@ -175,7 +238,7 @@ const UserManagement: React.FC = () => {
             variant="contained"
             color="error"
             startIcon={<Delete />}
-            onClick={handleBulkDelete}
+            onClick={handleBulkDeleteClick}
             size="small"
           >
             Slett valgte
@@ -205,39 +268,58 @@ const UserManagement: React.FC = () => {
           </TableHead>
           <TableBody>
             {filteredUsers.map((user) => (
-              <TableRow key={user.id} hover>
-                <TableCell padding="checkbox">
+              <TableRow 
+                key={user.id} 
+                hover 
+                sx={{ cursor: 'pointer' }}
+              >
+                <TableCell 
+                  padding="checkbox"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <Checkbox
                     checked={selectedUsers.has(user.id)}
                     onChange={() => toggleSelectUser(user.id)}
                   />
                 </TableCell>
-                <TableCell>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    {user.firstName} {user.lastName}
-                  </Typography>
+                <TableCell onClick={() => handleRowClick(user.id)}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                      {user.firstName} {user.lastName}
+                    </Typography>
+                    {!user.isActive && (
+                      <PersonOff fontSize="small" color="warning" titleAccess="Kun talent" />
+                    )}
+                  </Box>
                 </TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>{user.phoneNumber || '-'}</TableCell>
-                <TableCell>
+                <TableCell onClick={() => handleRowClick(user.id)}>{user.email}</TableCell>
+                <TableCell onClick={() => handleRowClick(user.id)}>{user.phoneNumber || '-'}</TableCell>
+                <TableCell onClick={() => handleRowClick(user.id)}>
                   <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
                     {user.roles?.map(role => (
                       <Chip key={role} label={role} size="small" color="primary" />
                     ))}
                   </Box>
                 </TableCell>
-                <TableCell>
+                <TableCell onClick={() => handleRowClick(user.id)}>
                   <Chip 
-                    label={user.isActive ? 'Aktiv' : 'Inaktiv'} 
-                    color={user.isActive ? 'success' : 'default'}
+                    label={user.isActive ? 'Aktiv' : 'Kun talent'} 
+                    color={user.isActive ? 'success' : 'warning'}
                     size="small"
                   />
                 </TableCell>
-                <TableCell align="right">
+                <TableCell align="right" onClick={(e) => e.stopPropagation()}>
+                  <IconButton 
+                    size="small" 
+                    onClick={() => handleOpenDialog(user.id)}
+                    sx={{ mr: 1 }}
+                  >
+                    <Edit fontSize="small" />
+                  </IconButton>
                   <IconButton 
                     size="small" 
                     color="error"
-                    onClick={() => handleDelete(user.id, `${user.firstName} ${user.lastName}`)}
+                    onClick={() => handleDeleteClick(user)}
                   >
                     <Delete fontSize="small" />
                   </IconButton>
@@ -252,6 +334,24 @@ const UserManagement: React.FC = () => {
         <Alert severity="info" sx={{ mt: 2 }}>
           {searchTerm || filterKategori ? 'Ingen brukere matcher søket' : 'Ingen brukere funnet'}
         </Alert>
+      )}
+
+      {/* User Dialog */}
+      <UserDialog
+        open={dialogOpen}
+        onClose={handleCloseDialog}
+        userId={selectedUserId}
+        onSave={handleDialogSave}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      {userToDelete && (
+        <ConfirmDeleteDialog
+          open={deleteDialogOpen}
+          onClose={handleDeleteCancel}
+          onConfirm={selectedUsers.size > 0 ? handleBulkDeleteConfirm : handleDeleteConfirm}
+          userName={userToDelete.firstName + (userToDelete.lastName ? ' ' + userToDelete.lastName : '')}
+        />
       )}
     </Box>
   );

@@ -6,7 +6,7 @@ import { Talent } from '../../services/api';
 interface TalentListProps {
   talenter: Talent[];
   onEdit: (talent: Talent) => void;
-  onDelete: (id: number, navn: string) => void;
+  onDelete: (id: number, navn: string, kategoriNavn?: string) => void;
 }
 
 const TalentList: React.FC<TalentListProps> = ({ talenter, onEdit, onDelete }) => {
@@ -46,7 +46,7 @@ const TalentList: React.FC<TalentListProps> = ({ talenter, onEdit, onDelete }) =
           <IconButton size="small" onClick={() => onEdit(talent)}>
             <Edit fontSize="small" />
           </IconButton>
-          <IconButton size="small" onClick={() => onDelete(talent.id, talent.navn)}>
+          <IconButton size="small" onClick={() => onDelete(talent.id, talent.navn, talent.kategori_navn)}>
             <Delete fontSize="small" />
           </IconButton>
         </Box>

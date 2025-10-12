@@ -29,7 +29,7 @@ interface TalentTreeProps {
   onCreateSubKategori: (parentId: number) => void;
   onCreateTalent: (kategoriId: number) => void;
   onEditTalent: (talent: Talent) => void;
-  onDeleteTalent: (id: number, navn: string) => void;
+  onDeleteTalent: (id: number, navn: string, kategoriNavn?: string) => void;
   getChildren: (parentId: number) => TalentKategori[];
   getTalenterForKategori: (kategoriId: number) => Talent[];
 }

@@ -234,7 +234,7 @@ const create = async (req, res) => {
 const update = async (req, res) => {
   try {
     const { id } = req.params;
-    const { firstName, lastName, phoneNumber, roles, talents, isActive } = req.body;
+    const { firstName, lastName, email, phoneNumber, currentPassword, roles, talents, isActive } = req.body;
     
     // Brukere kan kun oppdatere sin egen profil (begrensede felter) med mindre de er admin
     const isAdmin = req.user.roles.includes('admin');
@@ -244,14 +244,50 @@ const update = async (req, res) => {
       return res.status(403).json({ error: 'Insufficient permissions' });
     }
     
-    // Ikke-admin brukere kan kun oppdatere navn og telefon
-  if (!isAdmin && (roles || talents || isActive !== undefined)) {
-    return res.status(403).json({ error: 'Only admins can update roles, talents, and active status' });
-  }
+    // Ikke-admin brukere kan kun oppdatere navn, telefon og e-post
+    if (!isAdmin && (roles || talents || isActive !== undefined)) {
+      return res.status(403).json({ error: 'Only admins can update roles, talents, and active status' });
+    }
+    
+    // E-postendring krever ekstra sikkerhet
+    if (email !== undefined) {
+      const targetUser = await service.findById(id);
+      
+      if (!targetUser) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      
+      // Hvis bruker endrer sin egen e-post OG har passord, må de bekrefte med passord
+      if (isOwnProfile && targetUser.password_hash && !isAdmin) {
+        if (!currentPassword) {
+          return res.status(400).json({ 
+            error: 'Du må bekrefte med nåværende passord for å endre e-post',
+            requiresPassword: true 
+          });
+        }
+        
+        const isValidPassword = await service.verifyPassword(currentPassword, targetUser.password_hash);
+        if (!isValidPassword) {
+          return res.status(401).json({ error: 'Feil passord' });
+        }
+      }
+      
+      // Admin trenger ikke passord, men vi logger endringen
+      if (isAdmin && !isOwnProfile) {
+        console.log(`[BRUKER] Admin ${req.user.email} endret e-post for bruker ${id} fra ${targetUser.email} til ${email}`);
+      }
+      
+      // Sjekk om ny e-post allerede er i bruk
+      const existingUser = await service.findByEmail(email);
+      if (existingUser && existingUser.id !== parseInt(id)) {
+        return res.status(400).json({ error: 'E-postadressen er allerede i bruk' });
+      }
+    }
     
     const updates = {};
     if (firstName !== undefined) updates.firstName = firstName;
     if (lastName !== undefined) updates.lastName = lastName;
+    if (email !== undefined) updates.email = email;
     if (phoneNumber !== undefined) updates.phoneNumber = phoneNumber;
     if (roles !== undefined && isAdmin) updates.roles = roles;
     if (talents !== undefined && isAdmin) updates.talents = talents;
@@ -353,6 +389,105 @@ const bulkDelete = async (req, res) => {
   }
 };
 
+// ============================================================================
+// BRUKER-TALENT RELASJONER
+// ============================================================================
+
+/**
+ * GET /api/users/:id/talents
+ * Hent alle talents for en bruker
+ */
+const getUserTalents = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const talents = await service.findUserTalents(id);
+    
+    res.json({ talents });
+  } catch (error) {
+    console.error('[BRUKER] Get user talents error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/**
+ * POST /api/users/:id/talents
+ * Legg til talent for bruker
+ */
+const addUserTalent = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { talentId, erfaringsnivaa, notater } = req.body;
+    
+    // Sjekk om relasjonen allerede finnes
+    const exists = await service.hasUserTalent(id, talentId);
+    if (exists) {
+      return res.status(400).json({ error: 'Bruker har allerede dette talentet' });
+    }
+    
+    const userTalent = await service.addUserTalent(id, {
+      talentId,
+      erfaringsnivaa,
+      notater,
+    });
+    
+    res.status(201).json({ talent: userTalent });
+  } catch (error) {
+    console.error('[BRUKER] Add user talent error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/**
+ * PUT /api/users/:userId/talents/:talentId
+ * Oppdater bruker-talent relasjon
+ */
+const updateUserTalent = async (req, res) => {
+  try {
+    const { userId, talentId } = req.params;
+    const { erfaringsnivaa, notater } = req.body;
+    
+    // Finn relasjons-ID
+    const talents = await service.findUserTalents(userId);
+    const userTalent = talents.find(t => t.talent_id === parseInt(talentId));
+    
+    if (!userTalent) {
+      return res.status(404).json({ error: 'Bruker-talent relasjon ikke funnet' });
+    }
+    
+    const updated = await service.updateUserTalent(userTalent.id, {
+      erfaringsnivaa,
+      notater,
+    });
+    
+    res.json({ talent: updated });
+  } catch (error) {
+    console.error('[BRUKER] Update user talent error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/**
+ * DELETE /api/users/:userId/talents/:talentId
+ * Fjern talent fra bruker
+ */
+const removeUserTalent = async (req, res) => {
+  try {
+    const { userId, talentId } = req.params;
+    
+    const removed = await service.removeUserTalent(userId, talentId);
+    
+    if (!removed) {
+      return res.status(404).json({ error: 'Bruker-talent relasjon ikke funnet' });
+    }
+    
+    res.json({ message: 'Talent fjernet fra bruker' });
+  } catch (error) {
+    console.error('[BRUKER] Remove user talent error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 module.exports = {
   generateToken,
   login,
@@ -367,6 +502,11 @@ module.exports = {
   remove,
   bulkDelete,
   handleOAuthCallback,
+  // Bruker-talent
+  getUserTalents,
+  addUserTalent,
+  updateUserTalent,
+  removeUserTalent,
 };
 
 

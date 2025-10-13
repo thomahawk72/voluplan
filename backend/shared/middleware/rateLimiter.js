@@ -12,7 +12,8 @@ const toInt = (v, d) => {
 const createLoginLimiter = () => {
   const windowMs = toInt(process.env.LOGIN_RATE_WINDOW_MS, 15 * 60 * 1000);
   const max = toInt(process.env.LOGIN_RATE_MAX, process.env.NODE_ENV === 'development' ? 50 : 5);
-  const skipSuccessfulRequests = (process.env.LOGIN_RATE_SKIP_SUCCESS || 'true').toLowerCase() === 'true';
+  const defaultSkipSuccess = process.env.NODE_ENV === 'test' ? false : true;
+  const skipSuccessfulRequests = (process.env.LOGIN_RATE_SKIP_SUCCESS || String(defaultSkipSuccess)).toLowerCase() === 'true';
 
   return rateLimit({
     windowMs,
@@ -30,7 +31,7 @@ const createLoginLimiter = () => {
  */
 const createPasswordResetLimiter = () => {
   const windowMs = toInt(process.env.PWRESET_RATE_WINDOW_MS, 60 * 60 * 1000);
-  const max = toInt(process.env.PWRESET_RATE_MAX, 5);
+  const max = toInt(process.env.PWRESET_RATE_MAX, 3);
 
   return rateLimit({
     windowMs,

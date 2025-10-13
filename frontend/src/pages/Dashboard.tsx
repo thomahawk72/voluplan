@@ -18,6 +18,9 @@ import {
   Divider,
   CircularProgress,
   Alert,
+  ToggleButtonGroup,
+  ToggleButton,
+  Chip,
 } from '@mui/material';
 import {
   Settings,
@@ -29,10 +32,14 @@ import {
   Shield,
   CheckCircle,
   ChevronRight,
+  Visibility,
+  VisibilityOff,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { produksjonAPI, Produksjon } from '../services/api';
+
+type PublisertFilter = 'alle' | 'publisert' | 'upublisert';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -41,32 +48,50 @@ const Dashboard: React.FC = () => {
   
   const [kommendeProduksjoner, setKommendeProduksjoner] = useState<Produksjon[]>([]);
   const [nyligGjennomfort, setNyligGjennomfort] = useState<Produksjon[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [isFiltering, setIsFiltering] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [publisertFilter, setPublisertFilter] = useState<PublisertFilter>('alle');
 
   useEffect(() => {
     const fetchProduksjoner = async () => {
       try {
-        setLoading(true);
+        // Ved filterendring (ikke første lasting): vis subtle filtering state
+        if (!initialLoading) {
+          setIsFiltering(true);
+        }
         setError(null);
         
+        // Bygg filter-objekt basert på valgt filter
+        const filterParams: any = { kommende: true };
+        if (publisertFilter === 'publisert') {
+          filterParams.publisert = true;
+        } else if (publisertFilter === 'upublisert') {
+          filterParams.publisert = false;
+        }
+        // Hvis 'alle' er valgt, sender vi ikke publisert-parameter
+        
         // Hent kommende produksjoner
-        const kommendeData = await produksjonAPI.getAll({ kommende: true, publisert: true });
+        const kommendeData = await produksjonAPI.getAll(filterParams);
         setKommendeProduksjoner(kommendeData.produksjoner);
         
-        // Hent gjennomførte produksjoner
-        const gjennomfortData = await produksjonAPI.getAll({ gjennomfort: true, publisert: true });
-        setNyligGjennomfort(gjennomfortData.produksjoner.slice(0, 5)); // Vis kun de 5 siste
+        // Hent gjennomførte produksjoner (kun ved første lasting)
+        if (initialLoading) {
+          const gjennomfortData = await produksjonAPI.getAll({ gjennomfort: true, publisert: true });
+          setNyligGjennomfort(gjennomfortData.produksjoner.slice(0, 5)); // Vis kun de 5 siste
+        }
       } catch (err: any) {
         console.error('Feil ved henting av produksjoner:', err);
         setError('Kunne ikke laste produksjoner. Vennligst prøv igjen.');
       } finally {
-        setLoading(false);
+        setInitialLoading(false);
+        setIsFiltering(false);
       }
     };
 
     fetchProduksjoner();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [publisertFilter]);
 
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -165,7 +190,7 @@ const Dashboard: React.FC = () => {
       </AppBar>
 
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        {loading && (
+        {initialLoading && (
           <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
             <CircularProgress />
           </Box>
@@ -177,7 +202,7 @@ const Dashboard: React.FC = () => {
           </Alert>
         )}
         
-        {!loading && !error && (
+        {!initialLoading && !error && (
           <>
             {/* Kommende show */}
             <Paper sx={{ p: 3, mb: 3, boxShadow: 2 }}>
@@ -199,46 +224,103 @@ const Dashboard: React.FC = () => {
                 </Button>
               </Box>
               
-              {kommendeProduksjoner.length === 0 ? (
-                <Alert severity="info">Ingen fremtidige produksjoner planlagt</Alert>
-              ) : (
-                <List>
-                  {kommendeProduksjoner.map((produksjon, index) => (
-                    <React.Fragment key={produksjon.id}>
-                      <ListItem
-                        onClick={() => navigate(`/produksjon/${produksjon.id}`)}
-                        sx={{
-                          py: 2,
-                          cursor: 'pointer',
-                          '&:hover': { backgroundColor: '#f5f5f5' },
-                          borderRadius: 1,
-                        }}
-                      >
-                        <ListItemIcon>
-                          <CalendarToday color="action" />
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={produksjon.navn}
-                          primaryTypographyProps={{ 
-                            sx: { fontWeight: 500 } 
+              {/* Filter for publisert/upublisert */}
+              <Box sx={{ mb: 2, display: 'flex', justifyContent: 'center' }}>
+                <ToggleButtonGroup
+                  value={publisertFilter}
+                  exclusive
+                  onChange={(_, newFilter) => {
+                    if (newFilter !== null) {
+                      setPublisertFilter(newFilter);
+                    }
+                  }}
+                  size="small"
+                  sx={{ bgcolor: 'background.paper' }}
+                >
+                  <ToggleButton value="alle">
+                    Alle
+                  </ToggleButton>
+                  <ToggleButton value="publisert">
+                    <Visibility sx={{ mr: 0.5, fontSize: '1.2rem' }} />
+                    Publisert
+                  </ToggleButton>
+                  <ToggleButton value="upublisert">
+                    <VisibilityOff sx={{ mr: 0.5, fontSize: '1.2rem' }} />
+                    Upublisert
+                  </ToggleButton>
+                </ToggleButtonGroup>
+              </Box>
+              
+              <Box
+                sx={{
+                  opacity: isFiltering ? 0.5 : 1,
+                  transition: 'opacity 0.2s ease-in-out',
+                  pointerEvents: isFiltering ? 'none' : 'auto',
+                }}
+              >
+                {kommendeProduksjoner.length === 0 ? (
+                  <Alert severity="info">
+                    Ingen {publisertFilter === 'alle' ? '' : publisertFilter === 'publisert' ? 'publiserte ' : 'upubliserte '}fremtidige produksjoner planlagt
+                  </Alert>
+                ) : (
+                  <List>
+                    {kommendeProduksjoner.map((produksjon, index) => (
+                      <React.Fragment key={produksjon.id}>
+                        <ListItem
+                          onClick={() => navigate(`/produksjon/${produksjon.id}`)}
+                          sx={{
+                            py: 2,
+                            cursor: 'pointer',
+                            '&:hover': { backgroundColor: '#f5f5f5' },
+                            borderRadius: 1,
                           }}
-                          secondary={
-                            <React.Fragment>
-                              {formatDato(produksjon.tid)} • {produksjon.antall_personer} personer
-                              {produksjon.kategori_navn && ` • ${produksjon.kategori_navn}`}
-                            </React.Fragment>
-                          }
-                          secondaryTypographyProps={{
-                            component: 'span'
-                          }}
-                        />
-                        <ChevronRight color="action" />
-                      </ListItem>
-                      {index < kommendeProduksjoner.length - 1 && <Divider />}
-                    </React.Fragment>
-                  ))}
-                </List>
-              )}
+                        >
+                          <ListItemIcon>
+                            <CalendarToday color="action" />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Typography sx={{ fontWeight: 500 }}>
+                                  {produksjon.navn}
+                                </Typography>
+                                {produksjon.publisert ? (
+                                  <Chip 
+                                    icon={<Visibility sx={{ fontSize: '1rem' }} />}
+                                    label="Publisert" 
+                                    size="small" 
+                                    color="success"
+                                    sx={{ height: 24 }}
+                                  />
+                                ) : (
+                                  <Chip 
+                                    icon={<VisibilityOff sx={{ fontSize: '1rem' }} />}
+                                    label="Upublisert" 
+                                    size="small" 
+                                    color="default"
+                                    sx={{ height: 24 }}
+                                  />
+                                )}
+                              </Box>
+                            }
+                            secondary={
+                              <React.Fragment>
+                                {formatDato(produksjon.tid)} • {produksjon.antall_personer} personer
+                                {produksjon.kategori_navn && ` • ${produksjon.kategori_navn}`}
+                              </React.Fragment>
+                            }
+                            secondaryTypographyProps={{
+                              component: 'span'
+                            }}
+                          />
+                          <ChevronRight color="action" />
+                        </ListItem>
+                        {index < kommendeProduksjoner.length - 1 && <Divider />}
+                      </React.Fragment>
+                    ))}
+                  </List>
+                )}
+              </Box>
             </Paper>
           </>
         )}
@@ -285,7 +367,7 @@ const Dashboard: React.FC = () => {
         </Paper>
 
         {/* Nylig gjennomført */}
-        {!loading && !error && (
+        {!initialLoading && !error && (
           <Paper sx={{ p: 3, boxShadow: 2 }}>
             <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
               Nylig gjennomført

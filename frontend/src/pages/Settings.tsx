@@ -237,7 +237,7 @@ const Settings: React.FC = () => {
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                 <Category color={activeTab === 'talent' ? 'primary' : 'action'} />
-                <Typography variant="h6">Talent & Kategorier</Typography>
+                <Typography variant="h6">Talenter</Typography>
               </Box>
               <Typography variant="body2" color="text.secondary">
                 Administrer talenter og deres hierarkiske kategorier
@@ -263,10 +263,10 @@ const Settings: React.FC = () => {
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                 <TheaterComedy color={activeTab === 'produksjon' ? 'primary' : 'action'} />
-                <Typography variant="h6">Produksjonskategorier</Typography>
+                <Typography variant="h6">Produktsjonstyper</Typography>
               </Box>
               <Typography variant="body2" color="text.secondary">
-                Administrer talent-maler for produksjonskategorier
+                Administrere produksjonstyper og oppmøtetider
               </Typography>
             </CardContent>
             <CardActions>
@@ -346,7 +346,7 @@ const Settings: React.FC = () => {
         {activeTab === 'produksjon' && (
           <Paper sx={{ p: 3, boxShadow: 3 }}>
             <Typography variant="h5" sx={{ fontWeight: 600, mb: 3 }}>
-              Talent-maler for produksjonskategorier
+              Produksjonstyper
             </Typography>
             <ProduksjonsKategoriMal />
           </Paper>

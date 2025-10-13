@@ -24,6 +24,7 @@ interface ProduksjonsKategori {
   id: number;
   navn: string;
   beskrivelse: string | null;
+  plassering?: string | null;
 }
 
 const ProduksjonsKategoriMal: React.FC = () => {
@@ -31,6 +32,7 @@ const ProduksjonsKategoriMal: React.FC = () => {
   const [selectedKategori, setSelectedKategori] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState<string | null>(null);
 
   // Høyrepanel felter
   const [navn, setNavn] = useState('');
@@ -60,13 +62,15 @@ const ProduksjonsKategoriMal: React.FC = () => {
     setSelectedKategori(prev => (prev === id ? null : id));
     setActiveTab('talenter');
 
-    // Prefill felter (kan senere hentes fra API hvis nødvendig)
+    // Prefill felter fra valgt kategori
     const k = kategorier.find(k => k.id === id);
     if (k) {
       setNavn(k.navn || '');
       setBeskrivelse(k.beskrivelse || '');
+      setPlassering(k.plassering || '');
+      setSaved(null);
+      setError(null);
     }
-    setPlassering('');
   };
 
   if (loading) {
@@ -82,6 +86,11 @@ const ProduksjonsKategoriMal: React.FC = () => {
       {error && (
         <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
           {error}
+        </Alert>
+      )}
+      {saved && (
+        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSaved(null)}>
+          {saved}
         </Alert>
       )}
 
@@ -161,11 +170,24 @@ const ProduksjonsKategoriMal: React.FC = () => {
                 <Button
                   variant="contained"
                   onClick={async () => {
+                    if (!selectedKategori) return;
                     try {
-                      await produksjonAPI.updateKategori(selectedKategori, { navn, beskrivelse });
-                      await produksjonAPI.updateKategori(selectedKategori, { plassering });
-                    } catch (e) {
+                      setError(null);
+                      setSaved(null);
+                      await produksjonAPI.updateKategori(selectedKategori, { navn, beskrivelse, plassering });
+                      // Refetch og hold valg
+                      const data = await produksjonAPI.getAllKategorier();
+                      setKategorier(data.kategorier);
+                      const k = data.kategorier.find((x: any) => x.id === selectedKategori);
+                      if (k) {
+                        setNavn(k.navn || '');
+                        setBeskrivelse(k.beskrivelse || '');
+                        setPlassering(k.plassering || '');
+                      }
+                      setSaved('Kategori lagret');
+                    } catch (e: any) {
                       console.error(e);
+                      setError(e?.response?.data?.error || 'Kunne ikke lagre kategori');
                     }
                   }}
                 >

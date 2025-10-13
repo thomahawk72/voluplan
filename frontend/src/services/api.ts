@@ -22,11 +22,8 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Only redirect to login if not already on an auth page
-      const currentPath = window.location.pathname;
-      if (!currentPath.startsWith('/login') && !currentPath.startsWith('/reset-password') && !currentPath.startsWith('/forgot-password')) {
-        window.location.href = '/login';
-      }
+      const evt = new Event('session-expired');
+      window.dispatchEvent(evt);
     }
     return Promise.reject(error);
   }

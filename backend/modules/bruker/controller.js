@@ -12,8 +12,10 @@ const { sendPasswordResetEmail } = require('../../shared/services/emailService')
  * Generate JWT token
  */
 const generateToken = (userId) => {
+  const hours = parseInt(process.env.SESSION_MAX_AGE_HOURS || '8', 10);
+  const expiresIn = `${Math.max(1, hours)}h`;
   return jwt.sign({ userId }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+    expiresIn,
   });
 };
 
@@ -51,12 +53,15 @@ const login = async (req, res) => {
     // Generer token
     const token = generateToken(user.id);
     
+    const hours = parseInt(process.env.SESSION_MAX_AGE_HOURS || '8', 10);
+    const maxAgeMs = Math.max(1, hours) * 60 * 60 * 1000;
+
     // Sett cookie
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dager
+      maxAge: maxAgeMs,
     });
     
     // Returner brukerdata og token
@@ -347,12 +352,15 @@ const handleOAuthCallback = (req, res) => {
     const user = req.user;
     const token = generateToken(user.id);
     
+    const hours = parseInt(process.env.SESSION_MAX_AGE_HOURS || '8', 10);
+    const maxAgeMs = Math.max(1, hours) * 60 * 60 * 1000;
+
     // Sett cookie
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      maxAge: maxAgeMs,
     });
     
     // Redirect til frontend

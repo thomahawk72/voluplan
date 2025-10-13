@@ -10,6 +10,7 @@ import AuthCallback from './pages/AuthCallback';
 import Dashboard from './pages/Dashboard';
 import ProductionDetail from './pages/ProductionDetail';
 import Settings from './pages/Settings';
+import SessionExpiredDialog from './components/SessionExpiredDialog';
 
 const theme = createTheme({
   palette: {
@@ -65,6 +66,7 @@ function App() {
       <CssBaseline />
       <AuthProvider>
         <Router>
+          <SessionExpiredDialog />
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />

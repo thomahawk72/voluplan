@@ -65,8 +65,21 @@ CREATE TABLE IF NOT EXISTS produksjonskategori (
     id SERIAL PRIMARY KEY,
     navn VARCHAR(100) UNIQUE NOT NULL,
     beskrivelse TEXT,
+    plassering VARCHAR(200),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Talent-mal for produksjonskategorier
+CREATE TABLE IF NOT EXISTS produksjonskategori_talent_mal (
+    id SERIAL PRIMARY KEY,
+    kategori_id INTEGER NOT NULL REFERENCES produksjonskategori(id) ON DELETE CASCADE,
+    talent_id INTEGER NOT NULL REFERENCES talent(id) ON DELETE CASCADE,
+    antall INTEGER NOT NULL DEFAULT 1 CHECK (antall > 0),
+    beskrivelse TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (kategori_id, talent_id)
 );
 
 -- Produksjonsplan tabell
@@ -89,6 +102,7 @@ CREATE TABLE IF NOT EXISTS produksjon (
     publisert BOOLEAN DEFAULT false,
     beskrivelse TEXT,
     plan_id INTEGER REFERENCES produksjonsplan(id) ON DELETE SET NULL,
+    plassering VARCHAR(200),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -131,4 +145,6 @@ CREATE INDEX idx_produksjonsplan_slutt_dato ON produksjonsplan(slutt_dato);
 CREATE INDEX idx_produksjon_bemanning_produksjon_id ON produksjon_bemanning(produksjon_id);
 CREATE INDEX idx_produksjon_bemanning_person_id ON produksjon_bemanning(person_id);
 CREATE INDEX idx_produksjon_bemanning_talent_id ON produksjon_bemanning(talent_id);
+CREATE INDEX idx_produksjonskategori_talent_mal_kategori_id ON produksjonskategori_talent_mal(kategori_id);
+CREATE INDEX idx_produksjonskategori_talent_mal_talent_id ON produksjonskategori_talent_mal(talent_id);
 

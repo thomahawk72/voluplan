@@ -127,15 +127,13 @@ export interface Produksjon {
   id: number;
   navn: string;
   tid: string;
-  kategori_id: number | null;
-  kategori_navn: string | null;
+  kategori_id?: number | null;
+  kategori_navn?: string;
   publisert: boolean;
-  beskrivelse: string | null;
-  plan_id: number | null;
-  plan_navn: string | null;
-  antall_personer: string;
-  created_at: string;
-  updated_at: string;
+  beskrivelse?: string | null;
+  plan_id?: number | null;
+  antall_personer?: number;
+  plassering?: string | null;
 }
 
 export interface Bemanning {
@@ -190,6 +188,18 @@ export interface Talent {
   updated_at: string;
 }
 
+export interface ProduksjonsKategoriTalentMal {
+  id: number;
+  kategori_id: number;
+  talent_id: number;
+  talent_navn: string;
+  talent_kategori: string;
+  antall: number;
+  beskrivelse: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // Production API
 export const produksjonAPI = {
   getAll: async (filters?: { 
@@ -222,6 +232,69 @@ export const produksjonAPI = {
 
   getPlan: async (id: number): Promise<{ plan: ProduksjonsPlan }> => {
     const response = await api.get(`/produksjon/planer/${id}`);
+    return response.data;
+  },
+
+  // Produksjonskategori talent-mal
+  getTalentMal: async (kategoriId: number): Promise<{ talentMal: ProduksjonsKategoriTalentMal[] }> => {
+    const response = await api.get(`/produksjon/kategorier/${kategoriId}/talent-mal`);
+    return response.data;
+  },
+
+  addTalentToMal: async (kategoriId: number, data: { talentId: number; antall?: number; beskrivelse?: string }): Promise<{ talentMal: ProduksjonsKategoriTalentMal }> => {
+    const response = await api.post(`/produksjon/kategorier/${kategoriId}/talent-mal`, data);
+    return response.data;
+  },
+
+  updateTalentInMal: async (kategoriId: number, malId: number, data: { antall?: number; beskrivelse?: string }): Promise<{ talentMal: ProduksjonsKategoriTalentMal }> => {
+    const response = await api.put(`/produksjon/kategorier/${kategoriId}/talent-mal/${malId}`, data);
+    return response.data;
+  },
+
+  removeTalentFromMal: async (kategoriId: number, malId: number): Promise<void> => {
+    await api.delete(`/produksjon/kategorier/${kategoriId}/talent-mal/${malId}`);
+  },
+
+  // Kategorier
+  getAllKategorier: async (): Promise<{ kategorier: any[] }> => {
+    const response = await api.get('/produksjon/kategorier');
+    return response.data;
+  },
+
+  getKategori: async (id: number): Promise<{ kategori: any }> => {
+    const response = await api.get(`/produksjon/kategorier/${id}`);
+    return response.data;
+  },
+
+  updateKategori: async (id: number, data: { navn?: string; beskrivelse?: string; plassering?: string }): Promise<{ kategori: any }> => {
+    const response = await api.put(`/produksjon/kategorier/${id}`, data);
+    return response.data;
+  },
+
+  createProduksjon: async (data: { 
+    navn: string; 
+    tid: string; 
+    kategoriId?: number; 
+    publisert?: boolean; 
+    beskrivelse?: string; 
+    planId?: number;
+    applyTalentMal?: boolean;
+    plassering?: string;
+  }): Promise<{ produksjon: Produksjon; talentMal?: ProduksjonsKategoriTalentMal[] }> => {
+    const response = await api.post('/produksjon', data);
+    return response.data;
+  },
+
+  updateProduksjon: async (id: number, data: {
+    navn?: string;
+    tid?: string;
+    kategoriId?: number;
+    publisert?: boolean;
+    beskrivelse?: string;
+    planId?: number;
+    plassering?: string;
+  }): Promise<{ produksjon: Produksjon }> => {
+    const response = await api.put(`/produksjon/${id}`, data);
     return response.data;
   },
 };

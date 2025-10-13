@@ -236,6 +236,43 @@ Klassifiserer ulike typer produksjoner/arrangementer.
 
 ---
 
+### 5b. `produksjonskategori_talent_mal` - Talent-maler for produksjonskategorier
+Definerer en mal/template av talenter med antall for hver produksjonskategori. Brukes til å populere bemanningsliste når man oppretter ny produksjon.
+
+**Kolonner:**
+- `id` (SERIAL PRIMARY KEY)
+- `kategori_id` (INTEGER NOT NULL) - Referanse til `produksjonskategori.id`
+- `talent_id` (INTEGER NOT NULL) - Referanse til `talent.id`
+- `antall` (INTEGER NOT NULL DEFAULT 1) - Antall personer med dette talentet (må være > 0)
+- `beskrivelse` (TEXT) - Valgfri beskrivelse av rollen i denne kategorien
+- `created_at` (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+- `updated_at` (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+
+**Constraints:**
+- UNIQUE (`kategori_id`, `talent_id`) - En kategori kan kun ha et talent én gang i malen
+- CHECK (`antall` > 0) - Antall må være minst 1
+
+**Relasjoner:**
+- `kategori_id` → `produksjonskategori.id` (ON DELETE CASCADE)
+- `talent_id` → `talent.id` (ON DELETE CASCADE)
+
+**Indekser:**
+- Primærnøkkel på `id`
+- Indeks på `kategori_id`
+- Indeks på `talent_id`
+
+**Bruk:**
+Når en ny produksjon opprettes med `applyTalentMal=true`, kan systemet hente talent-malen for den valgte produksjonskategorien og foreslå denne som utgangspunkt for bemanning.
+
+**Eksempel:**
+For kategori "Teaterforestilling":
+- 2x Lydtekniker (fra Foto&Video → Lyd)
+- 1x Piano (fra Musikk → Band)
+- 1x Bass (fra Musikk → Band)
+- 2x Lysoperatør (fra Foto&Video → Lys)
+
+---
+
 ### 6. `produksjonsplan` - Overordnede produksjonsplaner
 Grupperer flere produksjoner under en felles plan (f.eks. "Vårsesongen 2025").
 

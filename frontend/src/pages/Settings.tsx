@@ -29,6 +29,7 @@ import TalentTree from '../components/settings/TalentTree';
 import TalentDialog from '../components/settings/TalentDialog';
 import UserManagement from '../components/settings/UserManagement';
 import ConfirmDeleteTalentDialog from '../components/settings/ConfirmDeleteTalentDialog';
+import ProduksjonsKategoriMal from '../components/settings/ProduksjonsKategoriMal';
 
 const Settings: React.FC = () => {
   const navigate = useNavigate();
@@ -249,18 +250,29 @@ const Settings: React.FC = () => {
             </CardActions>
           </Card>
 
-          <Card sx={{ boxShadow: 3, opacity: 0.6 }}>
+          <Card 
+            sx={{ 
+              boxShadow: 3,
+              cursor: 'pointer',
+              border: activeTab === 'produksjon' ? 2 : 0,
+              borderColor: 'primary.main',
+              '&:hover': { boxShadow: 6 }
+            }}
+            onClick={() => setActiveTab('produksjon')}
+          >
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <TheaterComedy color="action" />
+                <TheaterComedy color={activeTab === 'produksjon' ? 'primary' : 'action'} />
                 <Typography variant="h6">Produksjonskategorier</Typography>
               </Box>
               <Typography variant="body2" color="text.secondary">
-                Administrer kategorier for produksjoner
+                Administrer talent-maler for produksjonskategorier
               </Typography>
             </CardContent>
             <CardActions>
-              <Button size="small" disabled>Kommer snart</Button>
+              <Button size="small" disabled={activeTab === 'produksjon'}>
+                {activeTab === 'produksjon' ? 'Aktiv' : 'Vis'}
+              </Button>
             </CardActions>
           </Card>
 
@@ -327,6 +339,16 @@ const Settings: React.FC = () => {
                 getTalenterForKategori={getTalenterForKategori}
               />
             )}
+          </Paper>
+        )}
+
+        {/* Produksjonskategorier */}
+        {activeTab === 'produksjon' && (
+          <Paper sx={{ p: 3, boxShadow: 3 }}>
+            <Typography variant="h5" sx={{ fontWeight: 600, mb: 3 }}>
+              Talent-maler for produksjonskategorier
+            </Typography>
+            <ProduksjonsKategoriMal />
           </Paper>
         )}
 

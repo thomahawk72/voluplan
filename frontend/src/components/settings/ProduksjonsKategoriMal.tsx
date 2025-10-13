@@ -1,0 +1,217 @@
+import React, { useState, useEffect } from 'react';
+import {
+  Box,
+  Typography,
+  Paper,
+  List,
+  ListItemButton,
+  ListItemText,
+  CircularProgress,
+  Alert,
+  Tabs,
+  Tab,
+  TextField,
+  Button,
+} from '@mui/material';
+import {
+  ExpandMore,
+  ChevronRight,
+} from '@mui/icons-material';
+import { produksjonAPI } from '../../services/api';
+import TalentMalEditor from './TalentMalEditor';
+
+interface ProduksjonsKategori {
+  id: number;
+  navn: string;
+  beskrivelse: string | null;
+}
+
+const ProduksjonsKategoriMal: React.FC = () => {
+  const [kategorier, setKategorier] = useState<ProduksjonsKategori[]>([]);
+  const [selectedKategori, setSelectedKategori] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Høyrepanel felter
+  const [navn, setNavn] = useState('');
+  const [beskrivelse, setBeskrivelse] = useState('');
+  const [plassering, setPlassering] = useState('');
+  const [activeTab, setActiveTab] = useState<'talenter' | 'oppmote'>('talenter');
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const kategoriData = await produksjonAPI.getAllKategorier();
+      setKategorier(kategoriData.kategorier);
+    } catch (err: any) {
+      setError('Kunne ikke laste data');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleKategoriClick = (id: number) => {
+    // Toggle: klikk på samme kategori lukker høyrepanelet
+    setSelectedKategori(prev => (prev === id ? null : id));
+    setActiveTab('talenter');
+
+    // Prefill felter (kan senere hentes fra API hvis nødvendig)
+    const k = kategorier.find(k => k.id === id);
+    if (k) {
+      setNavn(k.navn || '');
+      setBeskrivelse(k.beskrivelse || '');
+    }
+    setPlassering('');
+  };
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  return (
+    <Box>
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '300px 1fr' }, gap: 3 }}>
+        {/* Venstre: Produksjonskategorier */}
+        <Paper sx={{ p: 2, height: 'fit-content', position: 'sticky', top: 16 }}>
+          <Typography variant="h6" sx={{ mb: 2 }}>
+            Velg kategori
+          </Typography>
+          <List>
+            {kategorier.map((kategori) => (
+              <ListItemButton
+                key={kategori.id}
+                selected={selectedKategori === kategori.id}
+                onClick={() => handleKategoriClick(kategori.id)}
+                sx={{
+                  borderRadius: 1,
+                  mb: 0.5,
+                  '&.Mui-selected': {
+                    bgcolor: 'primary.main',
+                    color: 'white',
+                    '&:hover': {
+                      bgcolor: 'primary.dark',
+                    }
+                  }
+                }}
+              >
+                <ListItemText 
+                  primary={kategori.navn}
+                  secondary={kategori.beskrivelse}
+                  secondaryTypographyProps={{
+                    sx: { color: selectedKategori === kategori.id ? 'rgba(255,255,255,0.7)' : 'text.secondary' }
+                  }}
+                />
+                {selectedKategori === kategori.id ? <ExpandMore /> : <ChevronRight />}
+              </ListItemButton>
+            ))}
+          </List>
+        </Paper>
+
+        {/* Høyre: Kategori-detaljer + faner */}
+        <Paper sx={{ p: 3 }}>
+          {selectedKategori ? (
+            <>
+              {/* Kategori header-felter */}
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' },
+                  gap: 2,
+                  mb: 2,
+                  alignItems: 'center',
+                }}
+              >
+                <TextField
+                  label="Navn"
+                  value={navn}
+                  onChange={(e) => setNavn(e.target.value)}
+                  fullWidth
+                />
+                <TextField
+                  label="Beskrivelse"
+                  value={beskrivelse}
+                  onChange={(e) => setBeskrivelse(e.target.value)}
+                  fullWidth
+                />
+                <TextField
+                  label="Plassering"
+                  placeholder="F.eks. Scene, Backstage"
+                  value={plassering}
+                  onChange={(e) => setPlassering(e.target.value)}
+                  fullWidth
+                />
+              </Box>
+
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+                <Button
+                  variant="contained"
+                  onClick={async () => {
+                    try {
+                      await produksjonAPI.updateKategori(selectedKategori, { navn, beskrivelse });
+                      await produksjonAPI.updateKategori(selectedKategori, { plassering });
+                    } catch (e) {
+                      console.error(e);
+                    }
+                  }}
+                >
+                  Lagre detaljer
+                </Button>
+              </Box>
+
+              {/* Faner */}
+              <Tabs
+                value={activeTab}
+                onChange={(_, v) => setActiveTab(v)}
+                sx={{ mb: 2 }}
+              >
+                <Tab value="talenter" label="Talenter" />
+                <Tab value="oppmote" label="Oppmøtetider" />
+              </Tabs>
+
+              {activeTab === 'talenter' && (
+                <TalentMalEditor
+                  kategoriId={selectedKategori}
+                  kategoriNavn={navn}
+                  onSave={() => {}}
+                />
+              )}
+
+              {activeTab === 'oppmote' && (
+                <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+                  <Typography variant="body1" sx={{ mb: 1, fontWeight: 600 }}>
+                    Oppmøtetider (kommer snart)
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Her kan du etterhvert definere standard oppmøtetider for denne produksjonskategorien.
+                  </Typography>
+                </Box>
+              )}
+            </>
+          ) : (
+            <Alert severity="info">
+              Velg en produksjonskategori fra listen til venstre for å konfigurere detaljer
+            </Alert>
+          )}
+        </Paper>
+      </Box>
+    </Box>
+  );
+};
+
+export default ProduksjonsKategoriMal;
+

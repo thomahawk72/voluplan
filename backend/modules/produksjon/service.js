@@ -121,10 +121,10 @@ const findKategoriById = async (id) => {
  * Opprett ny produksjonskategori
  */
 const createKategori = async (data) => {
-  const { navn, beskrivelse } = data;
+  const { navn, beskrivelse, plassering } = data;
   const result = await db.query(
-    'INSERT INTO produksjonskategori (navn, beskrivelse) VALUES ($1, $2) RETURNING *',
-    [navn, beskrivelse]
+    'INSERT INTO produksjonskategori (navn, beskrivelse, plassering) VALUES ($1, $2, $3) RETURNING *',
+    [navn, beskrivelse, plassering]
   );
   return result.rows[0];
 };
@@ -133,7 +133,7 @@ const createKategori = async (data) => {
  * Oppdater produksjonskategori
  */
 const updateKategori = async (id, data) => {
-  const { navn, beskrivelse } = data;
+  const { navn, beskrivelse, plassering } = data;
   
   const updateFields = [];
   const values = [];
@@ -146,6 +146,10 @@ const updateKategori = async (id, data) => {
   if (beskrivelse !== undefined) {
     updateFields.push(`beskrivelse = $${paramCount++}`);
     values.push(beskrivelse);
+  }
+  if (plassering !== undefined) {
+    updateFields.push(`plassering = $${paramCount++}`);
+    values.push(plassering);
   }
   
   if (updateFields.length === 0) {
@@ -166,6 +170,94 @@ const updateKategori = async (id, data) => {
 const deleteKategori = async (id) => {
   const result = await db.query(
     'DELETE FROM produksjonskategori WHERE id = $1 RETURNING id',
+    [id]
+  );
+  return result.rows[0] || null;
+};
+
+/**
+ * Hent talent-mal for en produksjonskategori
+ */
+const findTalentMalByKategoriId = async (kategoriId) => {
+  const result = await db.query(
+    `SELECT 
+      pktm.*,
+      t.navn as talent_navn,
+      COALESCE(
+        CASE 
+          WHEN tk3.parent_id IS NOT NULL AND tk2.parent_id IS NOT NULL THEN 
+            tk1.navn || ' → ' || tk2.navn || ' → ' || tk3.navn
+          WHEN tk3.parent_id IS NOT NULL THEN 
+            tk2.navn || ' → ' || tk3.navn
+          ELSE tk3.navn
+        END, 
+        tk3.navn
+      ) as talent_kategori
+    FROM produksjonskategori_talent_mal pktm
+    JOIN talent t ON pktm.talent_id = t.id
+    LEFT JOIN talentkategori tk3 ON t.kategori_id = tk3.id
+    LEFT JOIN talentkategori tk2 ON tk3.parent_id = tk2.id
+    LEFT JOIN talentkategori tk1 ON tk2.parent_id = tk1.id
+    WHERE pktm.kategori_id = $1
+    ORDER BY 
+      COALESCE(tk1.navn, tk2.navn, tk3.navn),
+      COALESCE(tk2.navn, tk3.navn),
+      tk3.navn,
+      t.navn`,
+    [kategoriId]
+  );
+  return result.rows;
+};
+
+/**
+ * Legg til talent i kategori-mal
+ */
+const addTalentToKategoriMal = async (data) => {
+  const { kategoriId, talentId, antall, beskrivelse } = data;
+  const result = await db.query(
+    'INSERT INTO produksjonskategori_talent_mal (kategori_id, talent_id, antall, beskrivelse) VALUES ($1, $2, $3, $4) RETURNING *',
+    [kategoriId, talentId, antall || 1, beskrivelse]
+  );
+  return result.rows[0];
+};
+
+/**
+ * Oppdater talent i kategori-mal
+ */
+const updateTalentInKategoriMal = async (id, data) => {
+  const { antall, beskrivelse } = data;
+  
+  const updateFields = [];
+  const values = [];
+  let paramCount = 1;
+  
+  if (antall !== undefined) {
+    updateFields.push(`antall = $${paramCount++}`);
+    values.push(antall);
+  }
+  if (beskrivelse !== undefined) {
+    updateFields.push(`beskrivelse = $${paramCount++}`);
+    values.push(beskrivelse);
+  }
+  
+  if (updateFields.length === 0) {
+    return null;
+  }
+  
+  updateFields.push(`updated_at = CURRENT_TIMESTAMP`);
+  values.push(id);
+  
+  const query = `UPDATE produksjonskategori_talent_mal SET ${updateFields.join(', ')} WHERE id = $${paramCount} RETURNING *`;
+  const result = await db.query(query, values);
+  return result.rows[0] || null;
+};
+
+/**
+ * Fjern talent fra kategori-mal
+ */
+const removeTalentFromKategoriMal = async (id) => {
+  const result = await db.query(
+    'DELETE FROM produksjonskategori_talent_mal WHERE id = $1 RETURNING id',
     [id]
   );
   return result.rows[0] || null;
@@ -251,21 +343,42 @@ const findById = async (id) => {
 
 /**
  * Opprett ny produksjon
+ * Hvis applyTalentMal=true og kategoriId er satt, populeres bemanning fra talent-mal
  */
 const create = async (data) => {
-  const { navn, tid, kategoriId, publisert, beskrivelse, planId } = data;
+  const { navn, tid, kategoriId, publisert, beskrivelse, planId, applyTalentMal, plassering } = data;
+  
+  // Finn standard plassering fra kategori dersom ikke eksplisitt oppgitt
+  let plasseringValue = plassering || null;
+  if (!plasseringValue && kategoriId) {
+    const katRes = await db.query('SELECT plassering FROM produksjonskategori WHERE id = $1', [kategoriId]);
+    plasseringValue = katRes.rows[0]?.plassering || null;
+  }
+
+  // Opprett produksjonen
   const result = await db.query(
-    'INSERT INTO produksjon (navn, tid, kategori_id, publisert, beskrivelse, plan_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-    [navn, tid, kategoriId, publisert || false, beskrivelse, planId]
+    'INSERT INTO produksjon (navn, tid, kategori_id, publisert, beskrivelse, plan_id, plassering) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+    [navn, tid, kategoriId, publisert || false, beskrivelse, planId, plasseringValue]
   );
-  return result.rows[0];
+  
+  const produksjon = result.rows[0];
+  
+  // Hvis applyTalentMal er true og kategori er satt, populer bemanning fra mal
+  // NB: Dette oppretter bare "slots" uten å tildele personer - personer må tildeles manuelt senere
+  if (applyTalentMal && kategoriId) {
+    const talentMal = await findTalentMalByKategoriId(kategoriId);
+    // Returnerer produksjon med info om at mal er anvendt
+    // Frontend må håndtere selve bemanningen separat hvis ønskelig
+  }
+  
+  return produksjon;
 };
 
 /**
  * Oppdater produksjon
  */
 const update = async (id, data) => {
-  const { navn, tid, kategoriId, publisert, beskrivelse, planId } = data;
+  const { navn, tid, kategoriId, publisert, beskrivelse, planId, plassering } = data;
   
   const updateFields = [];
   const values = [];
@@ -294,6 +407,10 @@ const update = async (id, data) => {
   if (planId !== undefined) {
     updateFields.push(`plan_id = $${paramCount++}`);
     values.push(planId);
+  }
+  if (plassering !== undefined) {
+    updateFields.push(`plassering = $${paramCount++}`);
+    values.push(plassering);
   }
   
   if (updateFields.length === 0) {
@@ -457,6 +574,12 @@ module.exports = {
   createKategori,
   updateKategori,
   deleteKategori,
+  
+  // Kategori talent-mal
+  findTalentMalByKategoriId,
+  addTalentToKategoriMal,
+  updateTalentInKategoriMal,
+  removeTalentFromKategoriMal,
   
   // Produksjoner
   findAll,

@@ -115,8 +115,8 @@ const getKategori = async (req, res) => {
 
 const createKategori = async (req, res) => {
   try {
-    const { navn, beskrivelse } = req.body;
-    const kategori = await service.createKategori({ navn, beskrivelse });
+    const { navn, beskrivelse, plassering } = req.body;
+    const kategori = await service.createKategori({ navn, beskrivelse, plassering });
     res.status(201).json({ kategori });
   } catch (error) {
     console.error('[PRODUKSJON] Create kategori error:', error);
@@ -130,9 +130,9 @@ const createKategori = async (req, res) => {
 const updateKategori = async (req, res) => {
   try {
     const { id } = req.params;
-    const { navn, beskrivelse } = req.body;
+    const { navn, beskrivelse, plassering } = req.body;
     
-    const kategori = await service.updateKategori(id, { navn, beskrivelse });
+    const kategori = await service.updateKategori(id, { navn, beskrivelse, plassering });
     
     if (!kategori) {
       return res.status(404).json({ error: 'Kategori not found' });
@@ -163,6 +163,80 @@ const deleteKategori = async (req, res) => {
     if (error.code === '23503') {
       return res.status(400).json({ error: 'Kan ikke slette kategori som har tilknyttede produksjoner' });
     }
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// ============================================================================
+// KATEGORI TALENT-MAL
+// ============================================================================
+
+const getTalentMal = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const talentMal = await service.findTalentMalByKategoriId(id);
+    res.json({ talentMal });
+  } catch (error) {
+    console.error('[PRODUKSJON] Get talent-mal error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+const addTalentToMal = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { talentId, antall, beskrivelse } = req.body;
+    
+    const talentMal = await service.addTalentToKategoriMal({
+      kategoriId: id,
+      talentId,
+      antall,
+      beskrivelse,
+    });
+    
+    res.status(201).json({ talentMal });
+  } catch (error) {
+    console.error('[PRODUKSJON] Add talent to mal error:', error);
+    if (error.code === '23505') {
+      return res.status(400).json({ error: 'Dette talentet finnes allerede i malen' });
+    }
+    if (error.code === '23503') {
+      return res.status(400).json({ error: 'Ugyldig kategori eller talent' });
+    }
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+const updateTalentInMal = async (req, res) => {
+  try {
+    const { malId } = req.params;
+    const { antall, beskrivelse } = req.body;
+    
+    const talentMal = await service.updateTalentInKategoriMal(malId, { antall, beskrivelse });
+    
+    if (!talentMal) {
+      return res.status(404).json({ error: 'Talent-mal not found' });
+    }
+    
+    res.json({ talentMal });
+  } catch (error) {
+    console.error('[PRODUKSJON] Update talent in mal error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+const removeTalentFromMal = async (req, res) => {
+  try {
+    const { malId } = req.params;
+    const deleted = await service.removeTalentFromKategoriMal(malId);
+    
+    if (!deleted) {
+      return res.status(404).json({ error: 'Talent-mal not found' });
+    }
+    
+    res.json({ message: 'Talent removed from mal successfully' });
+  } catch (error) {
+    console.error('[PRODUKSJON] Remove talent from mal error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -206,7 +280,7 @@ const get = async (req, res) => {
 
 const create = async (req, res) => {
   try {
-    const { navn, tid, kategoriId, publisert, beskrivelse, planId } = req.body;
+    const { navn, tid, kategoriId, publisert, beskrivelse, planId, applyTalentMal, plassering } = req.body;
     const produksjon = await service.create({
       navn,
       tid,
@@ -214,7 +288,16 @@ const create = async (req, res) => {
       publisert,
       beskrivelse,
       planId,
+      applyTalentMal,
+      plassering,
     });
+    
+    // Hvis talent-mal skal anvendes, hent malen og returner den sammen med produksjonen
+    if (applyTalentMal && kategoriId) {
+      const talentMal = await service.findTalentMalByKategoriId(kategoriId);
+      return res.status(201).json({ produksjon, talentMal });
+    }
+    
     res.status(201).json({ produksjon });
   } catch (error) {
     console.error('[PRODUKSJON] Create produksjon error:', error);
@@ -228,7 +311,7 @@ const create = async (req, res) => {
 const update = async (req, res) => {
   try {
     const { id } = req.params;
-    const { navn, tid, kategoriId, publisert, beskrivelse, planId } = req.body;
+    const { navn, tid, kategoriId, publisert, beskrivelse, planId, plassering } = req.body;
     
     const produksjon = await service.update(id, {
       navn,
@@ -237,6 +320,7 @@ const update = async (req, res) => {
       publisert,
       beskrivelse,
       planId,
+      plassering,
     });
     
     if (!produksjon) {
@@ -369,6 +453,12 @@ module.exports = {
   createKategori,
   updateKategori,
   deleteKategori,
+  
+  // Kategori talent-mal
+  getTalentMal,
+  addTalentToMal,
+  updateTalentInMal,
+  removeTalentFromMal,
   
   // Produksjoner
   list,

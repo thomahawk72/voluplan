@@ -70,6 +70,18 @@ const ProductionHeader: React.FC<ProductionHeaderProps> = ({
             <Chip label={produksjon.kategori_navn} color="primary" size="small" />
           </Box>
         )}
+
+        {produksjon.plassering && (
+          <Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+              <Schedule fontSize="small" color="action" />
+              <Typography variant="caption" color="text.secondary">Plassering</Typography>
+            </Box>
+            <Typography variant="body1" sx={{ fontWeight: 500 }}>
+              {produksjon.plassering}
+            </Typography>
+          </Box>
+        )}
       </Box>
 
       {produksjon.beskrivelse && (

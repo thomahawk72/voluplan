@@ -49,12 +49,30 @@ router.get('/kategorier/:id', authenticateToken, controller.getKategori);
 router.post('/kategorier', authenticateToken, requireRole(['admin']), [
   body('navn').trim().notEmpty(),
   body('beskrivelse').optional().trim(),
+  body('plassering').optional().trim(),
 ], validate, controller.createKategori);
 router.put('/kategorier/:id', authenticateToken, requireRole(['admin']), [
   body('navn').optional().trim().notEmpty(),
   body('beskrivelse').optional().trim(),
+  body('plassering').optional().trim(),
 ], validate, controller.updateKategori);
 router.delete('/kategorier/:id', authenticateToken, requireRole(['admin']), controller.deleteKategori);
+
+// ============================================================================
+// KATEGORI TALENT-MAL
+// ============================================================================
+
+router.get('/kategorier/:id/talent-mal', authenticateToken, controller.getTalentMal);
+router.post('/kategorier/:id/talent-mal', authenticateToken, requireRole(['admin']), [
+  body('talentId').isInt(),
+  body('antall').optional().isInt({ min: 1 }),
+  body('beskrivelse').optional().trim(),
+], validate, controller.addTalentToMal);
+router.put('/kategorier/:id/talent-mal/:malId', authenticateToken, requireRole(['admin']), [
+  body('antall').optional().isInt({ min: 1 }),
+  body('beskrivelse').optional().trim(),
+], validate, controller.updateTalentInMal);
+router.delete('/kategorier/:id/talent-mal/:malId', authenticateToken, requireRole(['admin']), controller.removeTalentFromMal);
 
 // ============================================================================
 // PRODUKSJONER
@@ -72,6 +90,8 @@ router.post('/', authenticateToken, requireRole(['admin']), [
   body('publisert').optional().isBoolean(),
   body('beskrivelse').optional().trim(),
   body('planId').optional().isInt(),
+  body('plassering').optional().trim(),
+  body('applyTalentMal').optional().isBoolean(),
 ], validate, controller.create);
 
 router.put('/:id', authenticateToken, requireRole(['admin']), [
@@ -81,6 +101,7 @@ router.put('/:id', authenticateToken, requireRole(['admin']), [
   body('publisert').optional().isBoolean(),
   body('beskrivelse').optional().trim(),
   body('planId').optional().isInt(),
+  body('plassering').optional().trim(),
 ], validate, controller.update);
 
 router.delete('/:id', authenticateToken, requireRole(['admin']), controller.remove);

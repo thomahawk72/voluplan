@@ -151,7 +151,8 @@ const updateKategori = async (req, res) => {
 const deleteKategori = async (req, res) => {
   try {
     const { id } = req.params;
-    const deleted = await service.deleteKategori(id);
+    const deep = req.query.deep === 'true';
+    const deleted = deep ? await service.deleteKategoriDeep(id) : await service.deleteKategori(id);
     
     if (!deleted) {
       return res.status(404).json({ error: 'Kategori not found' });

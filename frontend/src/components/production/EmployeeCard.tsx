@@ -138,7 +138,7 @@ const EmployeeCard: React.FC<EmployeeCardProps> = ({
                         color: 'text.secondary'
                       }}>
                         <Box sx={{ px: 2 }}>Avatar</Box>
-                        <Box>Navn & Talent</Box>
+                        <Box>Talent • Person</Box>
                         <Box sx={{ textAlign: 'center' }}>Status</Box>
                         <Box sx={{ textAlign: 'center', px: 1 }}>Handlinger</Box>
                       </Box>
@@ -160,13 +160,28 @@ const EmployeeCard: React.FC<EmployeeCardProps> = ({
                               {person.first_name[0]}{person.last_name[0]}
                             </Avatar>
                           </Box>
-                          <Box>
-                            <Typography sx={{ fontWeight: 500, fontSize: '0.875rem' }}>
-                              {person.first_name} {person.last_name}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {person.talent_navn}
-                            </Typography>
+                          <Box sx={{ minWidth: 0 }}>
+                            <Box sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 1,
+                              flexWrap: { xs: 'wrap', sm: 'nowrap' },
+                              rowGap: 0.25,
+                              minWidth: 0,
+                            }}>
+                              <Typography
+                                variant="body2"
+                                sx={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                              >
+                                {person.talent_navn}
+                              </Typography>
+                              <Typography
+                                variant="body2"
+                                sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: 'text.secondary' }}
+                              >
+                                • {person.first_name} {person.last_name}
+                              </Typography>
+                            </Box>
                             {person.notater && (
                               <Typography variant="caption" sx={{ fontStyle: 'italic', display: 'block' }}>
                                 "{person.notater}"

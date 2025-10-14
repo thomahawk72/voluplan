@@ -539,16 +539,32 @@ const UserDialog: React.FC<UserDialogProps> = ({ open, onClose, userId: initialU
                       )}
                     >
                       <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.25 }}>
-                          {talent.talent_navn}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                          {talent.kategori_navn}
-                        </Typography>
-                        <Box sx={{ display: 'flex', gap: 0.5, mt: 0.75, flexWrap: 'wrap' }}>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1,
+                            flexWrap: { xs: 'wrap', sm: 'nowrap' },
+                            rowGap: 0.25,
+                            minWidth: 0,
+                          }}
+                        >
+                          <Typography
+                            variant="body2"
+                            sx={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                          >
+                            {talent.talent_navn}
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                          >
+                            {talent.kategori_navn}
+                          </Typography>
                           <Chip 
-                            label={talent.erfaringsnivaa} 
-                            size="small" 
+                            label={talent.erfaringsnivaa}
+                            size="small"
                             color="primary"
                             sx={{ height: 20, fontSize: '0.7rem', textTransform: 'capitalize' }}
                           />

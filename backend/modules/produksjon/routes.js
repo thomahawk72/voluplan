@@ -56,6 +56,7 @@ router.put('/kategorier/:id', authenticateToken, requireRole(['admin']), [
   body('beskrivelse').optional().trim(),
   body('plassering').optional().trim(),
 ], validate, controller.updateKategori);
+// Støtter ?deep=true for å slette kategori + tilhørende maler
 router.delete('/kategorier/:id', authenticateToken, requireRole(['admin']), controller.deleteKategori);
 
 // ============================================================================

@@ -176,6 +176,26 @@ const deleteKategori = async (id) => {
 };
 
 /**
+ * Slett produksjonskategori og all tilhørende data (maler) i en transaksjon
+ */
+const deleteKategoriDeep = async (id) => {
+  const client = await db.pool.connect();
+  try {
+    await client.query('BEGIN');
+    // Slett maler eksplisitt for robusthet også der FK CASCADE ikke er oppdatert
+    await client.query('DELETE FROM produksjonskategori_talent_mal WHERE kategori_id = $1', [id]);
+    const del = await client.query('DELETE FROM produksjonskategori WHERE id = $1 RETURNING id', [id]);
+    await client.query('COMMIT');
+    return del.rows[0] || null;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
+/**
  * Hent talent-mal for en produksjonskategori
  */
 const findTalentMalByKategoriId = async (kategoriId) => {

@@ -19,6 +19,7 @@ import {
 } from '@mui/icons-material';
 import { produksjonAPI } from '../../services/api';
 import TalentMalEditor from './TalentMalEditor';
+import ConfirmDialog from '../common/ConfirmDialog';
 
 interface ProduksjonsKategori {
   id: number;
@@ -39,6 +40,7 @@ const ProduksjonsKategoriMal: React.FC = () => {
   const [beskrivelse, setBeskrivelse] = useState('');
   const [plassering, setPlassering] = useState('');
   const [activeTab, setActiveTab] = useState<'talenter' | 'oppmote'>('talenter');
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -97,9 +99,6 @@ const ProduksjonsKategoriMal: React.FC = () => {
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '300px 1fr' }, gap: 3 }}>
         {/* Venstre: Produksjonskategorier */}
         <Paper sx={{ p: 2, height: 'fit-content', position: 'sticky', top: 16 }}>
-          <Typography variant="h6" sx={{ mb: 2 }}>
-            Velg kategori
-          </Typography>
           <List>
             {kategorier.map((kategori) => (
               <ListItemButton
@@ -166,7 +165,14 @@ const ProduksjonsKategoriMal: React.FC = () => {
                 />
               </Box>
 
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                <Button
+                  color="error"
+                  variant="outlined"
+                  onClick={() => setConfirmOpen(true)}
+                >
+                  Slett kategori
+                </Button>
                 <Button
                   variant="contained"
                   onClick={async () => {
@@ -194,6 +200,35 @@ const ProduksjonsKategoriMal: React.FC = () => {
                   Lagre detaljer
                 </Button>
               </Box>
+
+              <ConfirmDialog
+                open={confirmOpen}
+                title="Slett kategori"
+                message={`Slette produksjonskategori "${navn}"? Dette kan ikke angres.`}
+                confirmText="Slett"
+                cancelText="Avbryt"
+                destructive
+                onCancel={() => setConfirmOpen(false)}
+                onConfirm={async () => {
+                  if (!selectedKategori) return;
+                  try {
+                    setError(null);
+                    setSaved(null);
+                    await produksjonAPI.deleteKategori(selectedKategori);
+                    const data = await produksjonAPI.getAllKategorier();
+                    setKategorier(data.kategorier);
+                    setSelectedKategori(null);
+                    setNavn('');
+                    setBeskrivelse('');
+                    setPlassering('');
+                    setSaved('Kategori slettet');
+                  } catch (e: any) {
+                    setError(e?.response?.data?.error || 'Kunne ikke slette kategori');
+                  } finally {
+                    setConfirmOpen(false);
+                  }
+                }}
+              />
 
               {/* Faner */}
               <Tabs

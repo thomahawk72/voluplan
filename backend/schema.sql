@@ -98,7 +98,6 @@ CREATE TABLE IF NOT EXISTS produksjon (
     id SERIAL PRIMARY KEY,
     navn VARCHAR(200) NOT NULL,
     tid TIMESTAMP NOT NULL,
-    kategori_id INTEGER REFERENCES produksjonskategori(id) ON DELETE RESTRICT,
     publisert BOOLEAN DEFAULT false,
     beskrivelse TEXT,
     plan_id INTEGER REFERENCES produksjonsplan(id) ON DELETE SET NULL,
@@ -135,7 +134,7 @@ CREATE INDEX idx_talentkategori_navn ON talentkategori(navn);
 CREATE INDEX idx_bruker_talent_bruker_id ON bruker_talent(bruker_id);
 CREATE INDEX idx_bruker_talent_talent_id ON bruker_talent(talent_id);
 CREATE INDEX idx_bruker_talent_erfaringsnivaa ON bruker_talent(erfaringsnivaa);
-CREATE INDEX idx_produksjon_kategori_id ON produksjon(kategori_id);
+-- kategori_id er fjernet (produksjon er selvstendig etter opprettelse)
 CREATE INDEX idx_produksjon_plan_id ON produksjon(plan_id);
 CREATE INDEX idx_produksjon_tid ON produksjon(tid);
 CREATE INDEX idx_produksjon_publisert ON produksjon(publisert);

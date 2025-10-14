@@ -280,7 +280,7 @@ const get = async (req, res) => {
 
 const create = async (req, res) => {
   try {
-    const { navn, tid, kategoriId, publisert, beskrivelse, planId, applyTalentMal, plassering } = req.body;
+  const { navn, tid, kategoriId, publisert, beskrivelse, planId, applyTalentMal, plassering } = req.body;
     const produksjon = await service.create({
       navn,
       tid,
@@ -302,7 +302,7 @@ const create = async (req, res) => {
   } catch (error) {
     console.error('[PRODUKSJON] Create produksjon error:', error);
     if (error.code === '23503') {
-      return res.status(400).json({ error: 'Ugyldig kategori eller plan' });
+      return res.status(400).json({ error: 'Ugyldig plan' });
     }
     res.status(500).json({ error: 'Internal server error' });
   }

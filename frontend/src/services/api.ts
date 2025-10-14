@@ -294,6 +294,11 @@ export const produksjonAPI = {
     const response = await api.put(`/produksjon/${id}`, data);
     return response.data;
   },
+
+  deleteKategori: async (id: number): Promise<{ message: string }> => {
+    const response = await api.delete(`/produksjon/kategorier/${id}`);
+    return response.data;
+  },
 };
 
 // Talent API

@@ -86,6 +86,7 @@ router.get('/', authenticateToken, controller.list);
 router.post('/', authenticateToken, requireRole(['admin']), [
   body('navn').trim().notEmpty(),
   body('tid').isISO8601(),
+  // kategoriId brukes kun ved oppretting for å kopiere mal/plassering, ikke lagres
   body('kategoriId').optional().isInt(),
   body('publisert').optional().isBoolean(),
   body('beskrivelse').optional().trim(),
@@ -97,7 +98,7 @@ router.post('/', authenticateToken, requireRole(['admin']), [
 router.put('/:id', authenticateToken, requireRole(['admin']), [
   body('navn').optional().trim().notEmpty(),
   body('tid').optional().isISO8601(),
-  body('kategoriId').optional().isInt(),
+  // kategoriId finnes ikke lenger på produksjon
   body('publisert').optional().isBoolean(),
   body('beskrivelse').optional().trim(),
   body('planId').optional().isInt(),

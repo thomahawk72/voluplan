@@ -274,11 +274,9 @@ const findAll = async (filters = {}) => {
   let query = `
     SELECT 
       p.*,
-      pk.navn as kategori_navn,
       pp.navn as plan_navn,
       COUNT(DISTINCT pb.person_id) as antall_personer
     FROM produksjon p
-    LEFT JOIN produksjonskategori pk ON p.kategori_id = pk.id
     LEFT JOIN produksjonsplan pp ON p.plan_id = pp.id
     LEFT JOIN produksjon_bemanning pb ON p.id = pb.produksjon_id
   `;
@@ -287,10 +285,7 @@ const findAll = async (filters = {}) => {
   const values = [];
   let paramCount = 1;
   
-  if (filters.kategoriId) {
-    conditions.push(`p.kategori_id = $${paramCount++}`);
-    values.push(filters.kategoriId);
-  }
+  // kategoriId er ikke lenger en del av modellen
   
   if (filters.planId) {
     conditions.push(`p.plan_id = $${paramCount++}`);
@@ -314,7 +309,7 @@ const findAll = async (filters = {}) => {
     query += ' WHERE ' + conditions.join(' AND ');
   }
   
-  query += ' GROUP BY p.id, pk.navn, pp.navn ORDER BY p.tid DESC';
+  query += ' GROUP BY p.id, pp.navn ORDER BY p.tid DESC';
   
   const result = await db.query(query, values);
   return result.rows;
@@ -327,15 +322,13 @@ const findById = async (id) => {
   const result = await db.query(
     `SELECT 
       p.*,
-      pk.navn as kategori_navn,
       pp.navn as plan_navn,
       COUNT(DISTINCT pb.person_id) as antall_personer
     FROM produksjon p
-    LEFT JOIN produksjonskategori pk ON p.kategori_id = pk.id
     LEFT JOIN produksjonsplan pp ON p.plan_id = pp.id
     LEFT JOIN produksjon_bemanning pb ON p.id = pb.produksjon_id
     WHERE p.id = $1
-    GROUP BY p.id, pk.navn, pp.navn`,
+    GROUP BY p.id, pp.navn`,
     [id]
   );
   return result.rows[0] || null;
@@ -357,8 +350,8 @@ const create = async (data) => {
 
   // Opprett produksjonen
   const result = await db.query(
-    'INSERT INTO produksjon (navn, tid, kategori_id, publisert, beskrivelse, plan_id, plassering) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-    [navn, tid, kategoriId, publisert || false, beskrivelse, planId, plasseringValue]
+    'INSERT INTO produksjon (navn, tid, publisert, beskrivelse, plan_id, plassering) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+    [navn, tid, publisert || false, beskrivelse, planId, plasseringValue]
   );
   
   const produksjon = result.rows[0];
@@ -392,10 +385,7 @@ const update = async (id, data) => {
     updateFields.push(`tid = $${paramCount++}`);
     values.push(tid);
   }
-  if (kategoriId !== undefined) {
-    updateFields.push(`kategori_id = $${paramCount++}`);
-    values.push(kategoriId);
-  }
+  // kategoriId finnes ikke lenger på produksjon
   if (publisert !== undefined) {
     updateFields.push(`publisert = $${paramCount++}`);
     values.push(publisert);

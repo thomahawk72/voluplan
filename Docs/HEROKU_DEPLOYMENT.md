@@ -65,6 +65,11 @@ heroku pg:psql
 
 # Eller lokalt:
 heroku pg:psql < backend/schema.sql
+
+# Kjør migrasjoner sekvensielt (anbefalt ved endringer)
+# Eksempler (kjør de som er relevante for ditt miljø)
+heroku pg:psql -a <APP> < backend/migrations/011_remove_kategori_fk_from_produksjon.sql
+heroku pg:psql -a <APP> < backend/migrations/012_ensure_talent_tables.sql
 ```
 
 ### 5. Åpne Applikasjonen

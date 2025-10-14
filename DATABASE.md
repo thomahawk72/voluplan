@@ -302,7 +302,7 @@ Representerer konkrete arrangementer/forestillinger.
 - `id` (SERIAL PRIMARY KEY)
 - `navn` (VARCHAR(200) NOT NULL) - Produksjonsnavn
 - `tid` (TIMESTAMP NOT NULL) - Dato og klokkeslett for produksjonen
-- `kategori_id` (INTEGER) - Referanse til `produksjonskategori.id`
+- (FJERNET) `kategori_id` – Produksjon er frikoblet fra kategori etter opprettelse. Ved oppretting kan en kategori velges for å kopiere mal/plassering, men ingen FK lagres. (Migrasjon 011)
 - `publisert` (BOOLEAN DEFAULT false) - Om produksjonen er publisert/synlig
 - `beskrivelse` (TEXT) - Detaljert beskrivelse
 - `plan_id` (INTEGER) - Referanse til `produksjonsplan.id`
@@ -310,14 +310,19 @@ Representerer konkrete arrangementer/forestillinger.
 - `updated_at` (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
 
 **Relasjoner:**
-- `kategori_id` → `produksjonskategori.id` (ON DELETE RESTRICT)
 - `plan_id` → `produksjonsplan.id` (ON DELETE SET NULL)
 
 **Indekser:**
 - Primærnøkkel på `id`
-- Indeks på `kategori_id`
 - Indeks på `plan_id`
 - Indeks på `tid`
+
+---
+
+### 7b. Sikring av talent-tabeller (Migrasjon 012)
+For drift sørger migrasjon 012 for at følgende tabeller og indekser finnes på miljøet:
+- `talentkategori`, `talent`, `bruker_talent`
+- Indekser på `kategori_id`, `leder_id`, `parent_id`, `navn`, `bruker_id`, `talent_id`, `erfaringsnivaa`
 
 ---
 

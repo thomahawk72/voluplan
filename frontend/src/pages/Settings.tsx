@@ -315,7 +315,7 @@ const Settings: React.FC = () => {
                 startIcon={<Add />}
                 onClick={() => openCreateKategoriDialog()}
               >
-                Ny root-kategori
+                Ny rot-kategori
               </Button>
             </Box>
 

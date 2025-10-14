@@ -20,9 +20,9 @@ const authenticateToken = async (req, res, next) => {
     // Verify token
     const decoded = jwt.verify(finalToken, process.env.JWT_SECRET);
 
-    // Get user from database
+    // Get user from database (uten deprecated talents-kolonnen)
     const result = await db.query(
-      'SELECT id, first_name, last_name, email, roles, talents, is_active FROM users WHERE id = $1',
+      'SELECT id, first_name, last_name, email, roles, is_active FROM users WHERE id = $1',
       [decoded.userId]
     );
 

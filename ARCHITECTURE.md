@@ -202,7 +202,7 @@ DELETE /api/produksjon/kategorier/:id/talent-mal/:malId  # Fjern talent fra mal
 # Produksjoner
 GET    /api/produksjon                         # Liste produksjoner
 GET    /api/produksjon/:id                     # Hent produksjon
-POST   /api/produksjon                         # Opprett produksjon (med applyTalentMal parameter)
+POST   /api/produksjon                         # Opprett produksjon (kan motta kategoriId kun for å kopiere mal/plassering; lagres ikke)
 PUT    /api/produksjon/:id                     # Oppdater produksjon
 DELETE /api/produksjon/:id                     # Slett produksjon
 
@@ -222,11 +222,15 @@ GET    /api/produksjon/bruker/:userId          # Produksjoner for bruker
 - `produksjonsplan`
 - `produksjonskategori`
 - `produksjonskategori_talent_mal` (Talent-maler per kategori)
-- `produksjon`
+- `produksjon` (uten FK til produksjonskategori fra og med migrasjon 011)
 - `produksjon_bemanning`
 
-**Talent-mal-funksjonalitet:**
-Produksjonskategorier kan ha en forhåndsdefinert mal av talenter med antall (f.eks. "Teaterforestilling" kan ha 2x Lydtekniker, 1x Piano, 2x Lysoperatør). Når man oppretter en ny produksjon med `applyTalentMal=true`, returneres talent-malen som kan brukes til å forhåndsutfylle bemanningslisten.
+**Opprettelsesflyt og talent-mal:**
+Produksjonskategorier kan ha en forhåndsdefinert mal av talenter med antall (f.eks. "Teaterforestilling" kan ha 2x Lydtekniker, 1x Piano, 2x Lysoperatør).
+
+- Ved opprettelse kan request inneholde `kategoriId` og `applyTalentMal=true`.
+- Backend kopierer kun data: henter talent-malen og (om ikke oppgitt) kategoriens `plassering` for å preutfylle produksjonen.
+- Det lagres INGEN fremmednøkkel til kategori på `produksjon` (decoupled modell, migrasjon 011).
 
 **Avhengigheter:**
 - Brukermodul: Hente brukerinfo for bemanning

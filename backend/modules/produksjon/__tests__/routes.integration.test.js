@@ -1,10 +1,10 @@
 const request = require('supertest');
 const express = require('express');
 const routes = require('../routes');
-const service = require('../service');
+const bemanningService = require('../bemanning/service');
 
-// Mock service
-jest.mock('../service');
+// Mock bemanning service
+jest.mock('../bemanning/service');
 
 // Mock auth middleware
 jest.mock('../../../shared/middleware/auth', () => ({
@@ -55,7 +55,7 @@ describe('Produksjon API - Bemanning Endpoints', () => {
         }
       ];
 
-      service.findBemanningByProduksjonId.mockResolvedValue(mockBemanning);
+      bemanningService.findBemanningByProduksjonId.mockResolvedValue(mockBemanning);
 
       const response = await request(app)
         .get('/api/produksjon/1/bemanning')
@@ -69,7 +69,7 @@ describe('Produksjon API - Bemanning Endpoints', () => {
     });
 
     it('skal returnere tomt array hvis ingen bemanning', async () => {
-      service.findBemanningByProduksjonId.mockResolvedValue([]);
+      bemanningService.findBemanningByProduksjonId.mockResolvedValue([]);
 
       const response = await request(app)
         .get('/api/produksjon/1/bemanning')
@@ -79,7 +79,7 @@ describe('Produksjon API - Bemanning Endpoints', () => {
     });
 
     it('skal returnere 500 ved database-feil', async () => {
-      service.findBemanningByProduksjonId.mockRejectedValue(new Error('Database error'));
+      bemanningService.findBemanningByProduksjonId.mockRejectedValue(new Error('Database error'));
 
       const response = await request(app)
         .get('/api/produksjon/1/bemanning')
@@ -100,7 +100,7 @@ describe('Produksjon API - Bemanning Endpoints', () => {
         status: 'planlagt'
       };
 
-      service.addBemanning.mockResolvedValue(mockBemanning);
+      bemanningService.addBemanning.mockResolvedValue(mockBemanning);
 
       const response = await request(app)
         .post('/api/produksjon/1/bemanning')
@@ -113,7 +113,7 @@ describe('Produksjon API - Bemanning Endpoints', () => {
         .expect(201);
 
       expect(response.body).toEqual({ bemanning: mockBemanning });
-      expect(service.addBemanning).toHaveBeenCalledWith({
+      expect(bemanningService.addBemanning).toHaveBeenCalledWith({
         produksjonId: '1',
         personId: 1,
         talentId: 1,
@@ -131,7 +131,7 @@ describe('Produksjon API - Bemanning Endpoints', () => {
         status: 'planlagt'
       };
 
-      service.addBemanning.mockResolvedValue(mockBemanning);
+      bemanningService.addBemanning.mockResolvedValue(mockBemanning);
 
       await request(app)
         .post('/api/produksjon/1/bemanning')
@@ -144,12 +144,12 @@ describe('Produksjon API - Bemanning Endpoints', () => {
         .expect(201);
 
       // Verifiser at kompetanseId IKKE sendes til service
-      expect(service.addBemanning).toHaveBeenCalledWith(
+      expect(bemanningService.addBemanning).toHaveBeenCalledWith(
         expect.objectContaining({
           talentId: 1
         })
       );
-      expect(service.addBemanning).toHaveBeenCalledWith(
+      expect(bemanningService.addBemanning).toHaveBeenCalledWith(
         expect.not.objectContaining({
           kompetanseId: expect.anything()
         })

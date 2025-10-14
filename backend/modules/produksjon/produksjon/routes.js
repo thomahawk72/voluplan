@@ -1,0 +1,60 @@
+/**
+ * Produksjon Routes
+ * Definerer API-endepunkter for produksjoner
+ */
+
+const express = require('express');
+const router = express.Router();
+const { body, validationResult } = require('express-validator');
+const controller = require('./controller');
+const { authenticateToken, requireRole } = require('../../../shared/middleware/auth');
+
+/**
+ * Middleware for validering
+ */
+const validate = (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+  next();
+};
+
+// Hent produksjoner for en bruker
+router.get('/bruker/:userId', authenticateToken, controller.getByUserId);
+
+// Hent produksjon med ID
+router.get('/:id', authenticateToken, controller.get);
+
+// Liste alle produksjoner (med filter)
+router.get('/', authenticateToken, controller.list);
+
+// Opprett ny produksjon
+router.post('/', authenticateToken, requireRole(['admin']), [
+  body('navn').trim().notEmpty(),
+  body('tid').isISO8601(),
+  // kategoriId brukes kun ved oppretting for å kopiere mal/plassering, ikke lagres
+  body('kategoriId').optional().isInt(),
+  body('publisert').optional().isBoolean(),
+  body('beskrivelse').optional().trim(),
+  body('planId').optional().isInt(),
+  body('plassering').optional().trim(),
+  body('applyTalentMal').optional().isBoolean(),
+], validate, controller.create);
+
+// Oppdater produksjon
+router.put('/:id', authenticateToken, requireRole(['admin']), [
+  body('navn').optional().trim().notEmpty(),
+  body('tid').optional().isISO8601(),
+  // kategoriId finnes ikke lenger på produksjon
+  body('publisert').optional().isBoolean(),
+  body('beskrivelse').optional().trim(),
+  body('planId').optional().isInt(),
+  body('plassering').optional().trim(),
+], validate, controller.update);
+
+// Slett produksjon
+router.delete('/:id', authenticateToken, requireRole(['admin']), controller.remove);
+
+module.exports = router;
+

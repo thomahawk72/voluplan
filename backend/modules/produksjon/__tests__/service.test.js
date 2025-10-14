@@ -1,4 +1,5 @@
-const service = require('../service');
+const bemanningService = require('../bemanning/service');
+const produksjonService = require('../produksjon/service');
 const db = require('../../../shared/config/database');
 
 // Mock database
@@ -29,7 +30,7 @@ describe('Produksjon Service', () => {
 
       db.query.mockResolvedValue({ rows: mockBemanning });
 
-      const result = await service.findBemanningByProduksjonId(1);
+      const result = await bemanningService.findBemanningByProduksjonId(1);
 
       expect(result).toEqual(mockBemanning);
       expect(db.query).toHaveBeenCalledWith(
@@ -53,7 +54,7 @@ describe('Produksjon Service', () => {
     it('skal returnere tomt array hvis ingen bemanning finnes', async () => {
       db.query.mockResolvedValue({ rows: [] });
 
-      const result = await service.findBemanningByProduksjonId(999);
+      const result = await bemanningService.findBemanningByProduksjonId(999);
 
       expect(result).toEqual([]);
     });
@@ -61,7 +62,7 @@ describe('Produksjon Service', () => {
     it('skal håndtere database-feil', async () => {
       db.query.mockRejectedValue(new Error('Database error'));
 
-      await expect(service.findBemanningByProduksjonId(1)).rejects.toThrow('Database error');
+      await expect(bemanningService.findBemanningByProduksjonId(1)).rejects.toThrow('Database error');
     });
   });
 
@@ -78,7 +79,7 @@ describe('Produksjon Service', () => {
 
       db.query.mockResolvedValue({ rows: [mockBemanning] });
 
-      const result = await service.addBemanning({
+      const result = await bemanningService.addBemanning({
         produksjonId: 1,
         personId: 1,
         talentId: 1,
@@ -105,7 +106,7 @@ describe('Produksjon Service', () => {
 
       db.query.mockResolvedValue({ rows: [mockBemanning] });
 
-      const result = await service.addBemanning({
+      const result = await bemanningService.addBemanning({
         produksjonId: 1,
         personId: 1,
         talentId: 1
@@ -136,7 +137,7 @@ describe('Produksjon Service', () => {
 
       db.query.mockResolvedValue({ rows: [mockProduksjon] });
 
-      const result = await service.findById(1);
+      const result = await produksjonService.findById(1);
 
       expect(result).toEqual(mockProduksjon);
       expect(db.query).toHaveBeenCalledWith(
@@ -148,7 +149,7 @@ describe('Produksjon Service', () => {
     it('skal returnere null hvis produksjon ikke finnes', async () => {
       db.query.mockResolvedValue({ rows: [] });
 
-      const result = await service.findById(999);
+      const result = await produksjonService.findById(999);
 
       expect(result).toBeNull();
     });

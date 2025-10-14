@@ -3,32 +3,65 @@
 ## Ansvar
 Håndterer produksjonsplaner, produksjonskategorier, produksjoner og bemanningsplanlegging.
 
-## Struktur
+## Modulær Struktur (Refaktorert)
 ```
 produksjon/
-├── service.js      # Database-operasjoner og business logic
-├── controller.js   # HTTP request/response håndtering
-├── routes.js       # API-endepunkter og validering
-└── __tests__/      # Tester for modulen
+├── routes.js         # Aggregator - samler alle delmoduler
+├── README.md         # Denne filen
+│
+├── plan/             # Produksjonsplaner
+│   ├── service.js
+│   ├── controller.js
+│   ├── routes.js
+│   └── README.md
+│
+├── kategori/         # Produksjonskategorier og talent-maler
+│   ├── service.js
+│   ├── controller.js
+│   ├── routes.js
+│   └── README.md
+│
+├── produksjon/       # Individuelle produksjoner
+│   ├── service.js
+│   ├── controller.js
+│   ├── routes.js
+│   └── README.md
+│
+├── bemanning/        # Bemanning av produksjoner
+│   ├── service.js
+│   ├── controller.js
+│   ├── routes.js
+│   └── README.md
+│
+└── __tests__/        # Tester for hele modulen
+    ├── service.test.js
+    ├── routes.integration.test.js
+    └── plans.safety.test.js
 ```
 
 ## API Endepunkter
 
-### Produksjonsplaner
+### Produksjonsplaner (`/api/produksjon/planer`)
 - `GET /api/produksjon/planer` - Liste alle planer
 - `GET /api/produksjon/planer/:id` - Hent plan med ID
 - `POST /api/produksjon/planer` - Opprett ny plan (kun admin)
 - `PUT /api/produksjon/planer/:id` - Oppdater plan (kun admin)
 - `DELETE /api/produksjon/planer/:id` - Slett plan (kun admin)
 
-### Produksjonskategorier
+### Produksjonskategorier (`/api/produksjon/kategorier`)
 - `GET /api/produksjon/kategorier` - Liste alle kategorier
 - `GET /api/produksjon/kategorier/:id` - Hent kategori med ID
 - `POST /api/produksjon/kategorier` - Opprett ny kategori (kun admin)
 - `PUT /api/produksjon/kategorier/:id` - Oppdater kategori (kun admin)
 - `DELETE /api/produksjon/kategorier/:id` - Slett kategori (kun admin)
 
-### Produksjoner
+### Kategori Talent-maler (`/api/produksjon/kategorier/:id/talent-mal`)
+- `GET /api/produksjon/kategorier/:id/talent-mal` - Hent talent-mal for kategori
+- `POST /api/produksjon/kategorier/:id/talent-mal` - Legg til talent i mal (kun admin)
+- `PUT /api/produksjon/kategorier/:id/talent-mal/:malId` - Oppdater talent i mal (kun admin)
+- `DELETE /api/produksjon/kategorier/:id/talent-mal/:malId` - Fjern talent fra mal (kun admin)
+
+### Produksjoner (`/api/produksjon`)
 - `GET /api/produksjon` - Liste alle produksjoner (med filter)
 - `GET /api/produksjon/:id` - Hent produksjon med ID
 - `POST /api/produksjon` - Opprett ny produksjon (kun admin)
@@ -36,7 +69,7 @@ produksjon/
 - `DELETE /api/produksjon/:id` - Slett produksjon (kun admin)
 - `GET /api/produksjon/bruker/:userId` - Hent produksjoner for en bruker
 
-### Bemanning
+### Bemanning (`/api/produksjon/:id/bemanning`)
 - `GET /api/produksjon/:id/bemanning` - Hent bemanning for produksjon
 - `POST /api/produksjon/:id/bemanning` - Legg til person (kun admin)
 - `PUT /api/produksjon/:id/bemanning/:bemanningId` - Oppdater bemanning (kun admin)
@@ -45,6 +78,7 @@ produksjon/
 ## Database-tabeller
 - `produksjonsplan` - Overordnede planer
 - `produksjonskategori` - Kategorier for produksjoner
+- `produksjonskategori_talent_mal` - Talent-maler per kategori
 - `produksjon` - Individuelle produksjoner
 - `produksjon_bemanning` - Kobling mellom produksjoner og personer
 
@@ -52,7 +86,7 @@ produksjon/
 - `shared/middleware/auth` - Autentisering og autorisasjon
 - `shared/config/database` - Database-tilkobling
 - **Tverr-modul:** Brukermodul (for bemanningsinformasjon)
-- **Tverr-modul:** Kompetansemodul (for bemanningsinformasjon)
+- **Tverr-modul:** Talentmodul (for bemanningsinformasjon)
 
 ## Eksempler
 
@@ -106,10 +140,17 @@ curl -X POST http://localhost:5001/api/produksjon/1/bemanning \
   -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
   -d '{
     "personId": 2,
-    "kompetanseId": 3,
+    "talentId": 3,
     "status": "planlagt",
     "notater": "Ansvarlig for hovedlyd"
   }'
 ```
 
+## Refaktorering (2025-10-14)
+Modulen er refaktorert fra en monolittisk struktur til 4 separate delmoduler:
+- **plan/** - Produksjonsplaner (104 linjer service + 93 linjer controller)
+- **kategori/** - Kategorier og talent-maler (219 linjer service + 186 linjer controller)
+- **produksjon/** - Produksjoner (188 linjer service + 135 linjer controller)
+- **bemanning/** - Bemanning (101 linjer service + 84 linjer controller)
 
+Alle filer er nå under 250 linjer og har tydelig separasjon mellom domener.

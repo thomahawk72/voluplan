@@ -1,130 +1,22 @@
 /**
- * Produksjon Routes
- * Definerer alle API-endepunkter for produksjonsmodulen
+ * Produksjon Routes (Aggregator)
+ * Aggregerer alle delmoduler: plan, kategori, produksjon, bemanning
  */
 
 const express = require('express');
 const router = express.Router();
-const { body, validationResult } = require('express-validator');
-const controller = require('./controller');
-const { authenticateToken, requireRole } = require('../../shared/middleware/auth');
 
-/**
- * Middleware for validering
- */
-const validate = (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-  next();
-};
+// Import delmodul routes
+const planRoutes = require('./plan/routes');
+const kategoriRoutes = require('./kategori/routes');
+const produksjonRoutes = require('./produksjon/routes');
+const bemanningRoutes = require('./bemanning/routes');
 
-// ============================================================================
-// PRODUKSJONSPLANER
-// ============================================================================
-
-router.get('/planer', authenticateToken, controller.listPlaner);
-router.get('/planer/:id', authenticateToken, controller.getPlan);
-router.post('/planer', authenticateToken, requireRole(['admin']), [
-  body('navn').trim().notEmpty(),
-  body('beskrivelse').optional().trim(),
-  body('startDato').optional().isISO8601(),
-  body('sluttDato').optional().isISO8601(),
-], validate, controller.createPlan);
-router.put('/planer/:id', authenticateToken, requireRole(['admin']), [
-  body('navn').optional().trim().notEmpty(),
-  body('beskrivelse').optional().trim(),
-  body('startDato').optional().isISO8601(),
-  body('sluttDato').optional().isISO8601(),
-], validate, controller.updatePlan);
-router.delete('/planer/:id', authenticateToken, requireRole(['admin']), controller.deletePlan);
-
-// ============================================================================
-// PRODUKSJONSKATEGORIER
-// ============================================================================
-
-router.get('/kategorier', authenticateToken, controller.listKategorier);
-router.get('/kategorier/:id', authenticateToken, controller.getKategori);
-router.post('/kategorier', authenticateToken, requireRole(['admin']), [
-  body('navn').trim().notEmpty(),
-  body('beskrivelse').optional().trim(),
-  body('plassering').optional().trim(),
-], validate, controller.createKategori);
-router.put('/kategorier/:id', authenticateToken, requireRole(['admin']), [
-  body('navn').optional().trim().notEmpty(),
-  body('beskrivelse').optional().trim(),
-  body('plassering').optional().trim(),
-], validate, controller.updateKategori);
-// Støtter ?deep=true for å slette kategori + tilhørende maler
-router.delete('/kategorier/:id', authenticateToken, requireRole(['admin']), controller.deleteKategori);
-
-// ============================================================================
-// KATEGORI TALENT-MAL
-// ============================================================================
-
-router.get('/kategorier/:id/talent-mal', authenticateToken, controller.getTalentMal);
-router.post('/kategorier/:id/talent-mal', authenticateToken, requireRole(['admin']), [
-  body('talentId').isInt(),
-  body('antall').optional().isInt({ min: 1 }),
-  body('beskrivelse').optional().trim(),
-], validate, controller.addTalentToMal);
-router.put('/kategorier/:id/talent-mal/:malId', authenticateToken, requireRole(['admin']), [
-  body('antall').optional().isInt({ min: 1 }),
-  body('beskrivelse').optional().trim(),
-], validate, controller.updateTalentInMal);
-router.delete('/kategorier/:id/talent-mal/:malId', authenticateToken, requireRole(['admin']), controller.removeTalentFromMal);
-
-// ============================================================================
-// PRODUKSJONER
-// ============================================================================
-
-router.get('/bruker/:userId', authenticateToken, controller.getByUserId);
-router.get('/:id/bemanning', authenticateToken, controller.getBemanning);
-router.get('/:id', authenticateToken, controller.get);
-router.get('/', authenticateToken, controller.list);
-
-router.post('/', authenticateToken, requireRole(['admin']), [
-  body('navn').trim().notEmpty(),
-  body('tid').isISO8601(),
-  // kategoriId brukes kun ved oppretting for å kopiere mal/plassering, ikke lagres
-  body('kategoriId').optional().isInt(),
-  body('publisert').optional().isBoolean(),
-  body('beskrivelse').optional().trim(),
-  body('planId').optional().isInt(),
-  body('plassering').optional().trim(),
-  body('applyTalentMal').optional().isBoolean(),
-], validate, controller.create);
-
-router.put('/:id', authenticateToken, requireRole(['admin']), [
-  body('navn').optional().trim().notEmpty(),
-  body('tid').optional().isISO8601(),
-  // kategoriId finnes ikke lenger på produksjon
-  body('publisert').optional().isBoolean(),
-  body('beskrivelse').optional().trim(),
-  body('planId').optional().isInt(),
-  body('plassering').optional().trim(),
-], validate, controller.update);
-
-router.delete('/:id', authenticateToken, requireRole(['admin']), controller.remove);
-
-// ============================================================================
-// BEMANNING
-// ============================================================================
-
-router.post('/:id/bemanning', authenticateToken, requireRole(['admin']), [
-  body('personId').isInt(),
-  body('talentId').isInt(),
-  body('notater').optional().trim(),
-  body('status').optional().isIn(['planlagt', 'bekreftet', 'avlyst']),
-], validate, controller.addBemanning);
-
-router.put('/:id/bemanning/:bemanningId', authenticateToken, requireRole(['admin']), [
-  body('notater').optional().trim(),
-  body('status').optional().isIn(['planlagt', 'bekreftet', 'avlyst']),
-], validate, controller.updateBemanning);
-
-router.delete('/:id/bemanning/:bemanningId', authenticateToken, requireRole(['admin']), controller.removeBemanning);
+// Mount delmoduler
+router.use('/planer', planRoutes);
+router.use('/kategorier', kategoriRoutes);
+router.use('/', bemanningRoutes);  // Bemanning bruker produksjon ID i path
+router.use('/', produksjonRoutes);  // Produksjoner på root
 
 module.exports = router;
 

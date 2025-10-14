@@ -177,6 +177,38 @@ Kreativ (root)
 - Bemanningsplanlegging
 - Produksjonsoversikter
 
+**Modulær struktur (Refaktorert 2025-10-14):**
+Modulen er refaktorert til 4 separate delmoduler for bedre vedlikeholdbarhet:
+```
+modules/produksjon/
+├── routes.js              # Aggregator - samler alle delmoduler
+├── README.md
+├── plan/                  # Produksjonsplaner
+│   ├── service.js        (104 linjer)
+│   ├── controller.js     (93 linjer)
+│   ├── routes.js
+│   └── README.md
+├── kategori/              # Kategorier og talent-maler
+│   ├── service.js        (219 linjer)
+│   ├── controller.js     (186 linjer)
+│   ├── routes.js
+│   └── README.md
+├── produksjon/            # Individuelle produksjoner
+│   ├── service.js        (188 linjer)
+│   ├── controller.js     (135 linjer)
+│   ├── routes.js
+│   └── README.md
+├── bemanning/             # Bemanning av produksjoner
+│   ├── service.js        (101 linjer)
+│   ├── controller.js     (84 linjer)
+│   ├── routes.js
+│   └── README.md
+└── __tests__/             # Tester for hele modulen
+    ├── service.test.js
+    ├── routes.integration.test.js
+    └── plans.safety.test.js
+```
+
 **API Endpoints:**
 ```
 # Planer

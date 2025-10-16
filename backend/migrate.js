@@ -7,12 +7,23 @@
 const { Pool } = require('pg');
 const fs = require('fs');
 const path = require('path');
+require('dotenv').config();
 
-// Bruk DATABASE_URL fra Heroku eller lokal config
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
-});
+// Use DATABASE_URL on Heroku, individual vars locally
+const pool = process.env.DATABASE_URL
+  ? new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: {
+        rejectUnauthorized: false, // Required for Heroku
+      },
+    })
+  : new Pool({
+      host: process.env.DB_HOST || 'localhost',
+      port: process.env.DB_PORT || 5432,
+      database: process.env.DB_NAME || 'voluplan',
+      user: process.env.DB_USER || 'postgres',
+      password: process.env.DB_PASSWORD,
+    });
 
 async function runMigrations() {
   console.log('🚀 Starting database migrations...\n');

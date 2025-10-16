@@ -259,9 +259,63 @@ Definerer en mal/template av talenter med antall for hver produksjonskategori. B
 **Indekser:**
 - Primærnøkkel på `id`
 - Indeks på `kategori_id`
-- Indeks på `talent_id`
 
-**Bruk:**
+---
+
+### 5c. `produksjonskategori_plan_mal_element` - Plan-mal for produksjonskategorier
+Definerer en standard agenda/plan for hver produksjonskategori. Støtter hierarkisk struktur med overskrifter (grupperinger) og hendelser (tidsbaserte aktiviteter).
+
+**Kolonner:**
+- `id` (SERIAL PRIMARY KEY)
+- `kategori_id` (INTEGER NOT NULL) - Referanse til `produksjonskategori.id`
+- `type` (VARCHAR(20) NOT NULL) - 'overskrift' eller 'hendelse'
+- `navn` (VARCHAR(200) NOT NULL) - Navn på overskrift/hendelse
+- `varighet_minutter` (INTEGER) - Varighet i minutter (NULL for overskrifter, påkrevd for hendelser)
+- `parent_id` (INTEGER) - Referanse til overordnet overskrift (NULL for overskrifter, påkrevd for hendelser)
+- `rekkefølge` (INTEGER NOT NULL DEFAULT 0) - Sorteringsrekkefølge innenfor samme kategori/parent
+- `created_at` (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+- `updated_at` (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+
+**Constraints:**
+- CHECK (`type` IN ('overskrift', 'hendelse'))
+- CHECK (`varighet_minutter` IS NULL OR `varighet_minutter` >= 0)
+- CHECK Overskrift-struktur: 
+  - Overskrifter MÅ ha `parent_id = NULL` og `varighet_minutter = NULL`
+  - Hendelser MÅ ha `parent_id` satt (referanse til overskrift) og `varighet_minutter` satt
+
+**Relasjoner:**
+- `kategori_id` → `produksjonskategori.id` (ON DELETE CASCADE)
+- `parent_id` → `produksjonskategori_plan_mal_element.id` (ON DELETE CASCADE)
+
+**Hierarkisk struktur:**
+```
+Overskrift: "Før møtet" (type='overskrift', parent_id=NULL)
+  ├─ Hendelse: "Musikk i anlegget" (type='hendelse', parent_id=1, varighet=5 min)
+  └─ Hendelse: "Count down" (type='hendelse', parent_id=1, varighet=10 min)
+  
+Overskrift: "Møtet starter" (type='overskrift', parent_id=NULL)
+  ├─ Hendelse: "Lovsang" (type='hendelse', parent_id=4, varighet=4 min)
+  └─ Hendelse: "Velkommen" (type='hendelse', parent_id=4, varighet=5 min)
+```
+
+**Indekser:**
+- Primærnøkkel på `id`
+- Indeks på `kategori_id`
+- Indeks på `parent_id`
+- Kombinert indeks på (`kategori_id`, `parent_id`, `rekkefølge`) for effektiv sortering
+
+**Eksempel bruk:**
+```sql
+-- Eksempel: Hent hele plan-mal for en kategori i hierarkisk rekkefølge
+SELECT *
+FROM produksjonskategori_plan_mal_element
+WHERE kategori_id = 1
+ORDER BY COALESCE(parent_id, id), parent_id NULLS FIRST, rekkefølge, id;
+```
+
+---
+
+### 6. `produksjonsplan` - Overordnede planer
 Når en ny produksjon opprettes med `applyTalentMal=true`, kan systemet hente talent-malen for den valgte produksjonskategorien og foreslå denne som utgangspunkt for bemanning.
 
 **Eksempel:**

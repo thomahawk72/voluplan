@@ -70,5 +70,36 @@ router.put('/:id/talent-mal/:malId', authenticateToken, requireRole(['admin']), 
 // Fjern talent fra mal
 router.delete('/:id/talent-mal/:malId', authenticateToken, requireRole(['admin']), controller.removeTalentFromMal);
 
+// ============================================================================
+// KATEGORI PLAN-MAL
+// ============================================================================
+
+// Hent plan-mal for kategori
+router.get('/:id/plan-mal', authenticateToken, controller.getPlanMal);
+
+// Legg til element i plan-mal
+router.post('/:id/plan-mal', authenticateToken, requireRole(['admin']), [
+  body('type').isIn(['overskrift', 'hendelse']),
+  body('navn').trim().notEmpty(),
+  body('varighetMinutter').optional().isInt({ min: 0 }),
+  body('parentId').optional().isInt(),
+  body('rekkefølge').optional().isInt({ min: 0 }),
+], validate, controller.addPlanMalElement);
+
+// Oppdater element i plan-mal
+router.put('/:id/plan-mal/:elementId', authenticateToken, requireRole(['admin']), [
+  body('navn').optional().trim().notEmpty(),
+  body('varighetMinutter').optional().isInt({ min: 0 }),
+  body('rekkefølge').optional().isInt({ min: 0 }),
+], validate, controller.updatePlanMalElement);
+
+// Oppdater kun rekkefølge på element
+router.patch('/:id/plan-mal/:elementId/rekkefølge', authenticateToken, requireRole(['admin']), [
+  body('rekkefølge').isInt({ min: 0 }),
+], validate, controller.updatePlanMalRekkefølge);
+
+// Fjern element fra plan-mal
+router.delete('/:id/plan-mal/:elementId', authenticateToken, requireRole(['admin']), controller.removePlanMalElement);
+
 module.exports = router;
 

@@ -82,6 +82,24 @@ CREATE TABLE IF NOT EXISTS produksjonskategori_talent_mal (
     UNIQUE (kategori_id, talent_id)
 );
 
+-- Plan-mal for produksjonskategorier (overskrifter og hendelser)
+CREATE TABLE IF NOT EXISTS produksjonskategori_plan_mal_element (
+    id SERIAL PRIMARY KEY,
+    kategori_id INTEGER NOT NULL REFERENCES produksjonskategori(id) ON DELETE CASCADE,
+    type VARCHAR(20) NOT NULL CHECK (type IN ('overskrift', 'hendelse')),
+    navn VARCHAR(200) NOT NULL,
+    varighet_minutter INTEGER CHECK (varighet_minutter IS NULL OR varighet_minutter >= 0),
+    parent_id INTEGER REFERENCES produksjonskategori_plan_mal_element(id) ON DELETE CASCADE,
+    rekkefølge INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT check_overskrift_struktur CHECK (
+        (type = 'overskrift' AND parent_id IS NULL AND varighet_minutter IS NULL)
+        OR
+        (type = 'hendelse' AND parent_id IS NOT NULL AND varighet_minutter IS NOT NULL)
+    )
+);
+
 -- Produksjonsplan tabell
 CREATE TABLE IF NOT EXISTS produksjonsplan (
     id SERIAL PRIMARY KEY,

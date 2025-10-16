@@ -252,6 +252,41 @@ export const produksjonAPI = {
     await api.delete(`/produksjon/kategorier/${kategoriId}/talent-mal/${malId}`);
   },
 
+  // Produksjonskategori plan-mal
+  getPlanMal: async (kategoriId: number): Promise<{ planMal: any[] }> => {
+    const response = await api.get(`/produksjon/kategorier/${kategoriId}/plan-mal`);
+    return response.data;
+  },
+
+  addPlanMalElement: async (kategoriId: number, data: { 
+    type: 'overskrift' | 'hendelse'; 
+    navn: string; 
+    varighetMinutter?: number; 
+    parentId?: number; 
+    rekkefølge?: number 
+  }): Promise<{ element: any }> => {
+    const response = await api.post(`/produksjon/kategorier/${kategoriId}/plan-mal`, data);
+    return response.data;
+  },
+
+  updatePlanMalElement: async (kategoriId: number, elementId: number, data: { 
+    navn?: string; 
+    varighetMinutter?: number; 
+    rekkefølge?: number 
+  }): Promise<{ element: any }> => {
+    const response = await api.put(`/produksjon/kategorier/${kategoriId}/plan-mal/${elementId}`, data);
+    return response.data;
+  },
+
+  updatePlanMalRekkefølge: async (kategoriId: number, elementId: number, rekkefølge: number): Promise<{ element: any }> => {
+    const response = await api.patch(`/produksjon/kategorier/${kategoriId}/plan-mal/${elementId}/rekkefølge`, { rekkefølge });
+    return response.data;
+  },
+
+  removePlanMalElement: async (kategoriId: number, elementId: number): Promise<void> => {
+    await api.delete(`/produksjon/kategorier/${kategoriId}/plan-mal/${elementId}`);
+  },
+
   // Kategorier
   getAllKategorier: async (): Promise<{ kategorier: any[] }> => {
     const response = await api.get('/produksjon/kategorier');

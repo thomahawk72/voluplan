@@ -19,6 +19,7 @@ import {
 } from '@mui/icons-material';
 import { produksjonAPI } from '../../services/api';
 import TalentMalEditor from './TalentMalEditor';
+import PlanMalEditor from './PlanMalEditor';
 import ConfirmDialog from '../common/ConfirmDialog';
 
 interface ProduksjonsKategori {
@@ -39,7 +40,7 @@ const ProduksjonsKategoriMal: React.FC = () => {
   const [navn, setNavn] = useState('');
   const [beskrivelse, setBeskrivelse] = useState('');
   const [plassering, setPlassering] = useState('');
-  const [activeTab, setActiveTab] = useState<'talenter' | 'oppmote'>('talenter');
+  const [activeTab, setActiveTab] = useState<'talenter' | 'oppmote' | 'plan'>('talenter');
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
@@ -62,7 +63,7 @@ const ProduksjonsKategoriMal: React.FC = () => {
   const handleKategoriClick = (id: number) => {
     // Toggle: klikk på samme kategori lukker høyrepanelet
     setSelectedKategori(prev => (prev === id ? null : id));
-    setActiveTab('talenter');
+    setActiveTab('plan');
 
     // Prefill felter fra valgt kategori
     const k = kategorier.find(k => k.id === id);
@@ -197,7 +198,7 @@ const ProduksjonsKategoriMal: React.FC = () => {
                     }
                   }}
                 >
-                  Lagre detaljer
+                  Lagre
                 </Button>
               </Box>
 
@@ -236,9 +237,20 @@ const ProduksjonsKategoriMal: React.FC = () => {
                 onChange={(_, v) => setActiveTab(v)}
                 sx={{ mb: 2 }}
               >
+                <Tab value="plan" label="Plan" />
                 <Tab value="talenter" label="Talenter" />
                 <Tab value="oppmote" label="Oppmøtetider" />
               </Tabs>
+
+              {activeTab === 'plan' && (
+                <PlanMalEditor
+                  kategoriId={selectedKategori}
+                  onSave={() => {
+                    setSaved('Plan-mal oppdatert');
+                    setTimeout(() => setSaved(null), 3000);
+                  }}
+                />
+              )}
 
               {activeTab === 'talenter' && (
                 <TalentMalEditor

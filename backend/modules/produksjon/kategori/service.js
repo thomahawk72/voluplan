@@ -200,6 +200,107 @@ const removeTalentFromKategoriMal = async (id) => {
   return result.rows[0] || null;
 };
 
+// ============================================================================
+// KATEGORI PLAN-MAL
+// ============================================================================
+
+/**
+ * Hent plan-mal for en produksjonskategori
+ */
+const findPlanMalByKategoriId = async (kategoriId) => {
+  const result = await db.query(
+    `SELECT 
+      id,
+      kategori_id,
+      type,
+      navn,
+      varighet_minutter,
+      parent_id,
+      rekkefølge
+    FROM produksjonskategori_plan_mal_element
+    WHERE kategori_id = $1
+    ORDER BY 
+      COALESCE(parent_id, id),
+      parent_id NULLS FIRST,
+      rekkefølge,
+      id`,
+    [kategoriId]
+  );
+  return result.rows;
+};
+
+/**
+ * Legg til element i plan-mal (overskrift eller hendelse)
+ */
+const addPlanMalElement = async (data) => {
+  const { kategoriId, type, navn, varighetMinutter, parentId, rekkefølge } = data;
+  const result = await db.query(
+    `INSERT INTO produksjonskategori_plan_mal_element 
+      (kategori_id, type, navn, varighet_minutter, parent_id, rekkefølge) 
+    VALUES ($1, $2, $3, $4, $5, $6) 
+    RETURNING *`,
+    [kategoriId, type, navn, varighetMinutter || null, parentId || null, rekkefølge || 0]
+  );
+  return result.rows[0];
+};
+
+/**
+ * Oppdater element i plan-mal
+ */
+const updatePlanMalElement = async (id, data) => {
+  const { navn, varighetMinutter, rekkefølge } = data;
+  
+  const updateFields = [];
+  const values = [];
+  let paramCount = 1;
+  
+  if (navn !== undefined) {
+    updateFields.push(`navn = $${paramCount++}`);
+    values.push(navn);
+  }
+  if (varighetMinutter !== undefined) {
+    updateFields.push(`varighet_minutter = $${paramCount++}`);
+    values.push(varighetMinutter);
+  }
+  if (rekkefølge !== undefined) {
+    updateFields.push(`rekkefølge = $${paramCount++}`);
+    values.push(rekkefølge);
+  }
+  
+  if (updateFields.length === 0) {
+    return null;
+  }
+  
+  updateFields.push(`updated_at = CURRENT_TIMESTAMP`);
+  values.push(id);
+  
+  const query = `UPDATE produksjonskategori_plan_mal_element SET ${updateFields.join(', ')} WHERE id = $${paramCount} RETURNING *`;
+  const result = await db.query(query, values);
+  return result.rows[0] || null;
+};
+
+/**
+ * Oppdater kun rekkefølge på et element
+ */
+const updatePlanMalRekkefølge = async (id, rekkefølge) => {
+  const result = await db.query(
+    'UPDATE produksjonskategori_plan_mal_element SET rekkefølge = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *',
+    [rekkefølge, id]
+  );
+  return result.rows[0] || null;
+};
+
+/**
+ * Fjern element fra plan-mal (CASCADE sletter barn automatisk)
+ */
+const removePlanMalElement = async (id) => {
+  const result = await db.query(
+    'DELETE FROM produksjonskategori_plan_mal_element WHERE id = $1 RETURNING id',
+    [id]
+  );
+  return result.rows[0] || null;
+};
+
 module.exports = {
   // Kategorier
   findAllKategorier,
@@ -214,5 +315,12 @@ module.exports = {
   addTalentToKategoriMal,
   updateTalentInKategoriMal,
   removeTalentFromKategoriMal,
+  
+  // Kategori plan-mal
+  findPlanMalByKategoriId,
+  addPlanMalElement,
+  updatePlanMalElement,
+  updatePlanMalRekkefølge,
+  removePlanMalElement,
 };
 

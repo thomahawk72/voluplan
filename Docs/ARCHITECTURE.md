@@ -231,6 +231,13 @@ POST   /api/produksjon/kategorier/:id/talent-mal         # Legg til talent i mal
 PUT    /api/produksjon/kategorier/:id/talent-mal/:malId  # Oppdater talent i mal
 DELETE /api/produksjon/kategorier/:id/talent-mal/:malId  # Fjern talent fra mal
 
+# Kategori Plan-maler
+GET    /api/produksjon/kategorier/:id/plan-mal                      # Hent plan-mal for kategori
+POST   /api/produksjon/kategorier/:id/plan-mal                      # Legg til element (overskrift/hendelse)
+PUT    /api/produksjon/kategorier/:id/plan-mal/:elementId           # Oppdater element
+PATCH  /api/produksjon/kategorier/:id/plan-mal/:elementId/rekkefølge # Oppdater rekkefølge
+DELETE /api/produksjon/kategorier/:id/plan-mal/:elementId           # Fjern element
+
 # Produksjoner
 GET    /api/produksjon                         # Liste produksjoner
 GET    /api/produksjon/:id                     # Hent produksjon
@@ -254,6 +261,7 @@ GET    /api/produksjon/bruker/:userId          # Produksjoner for bruker
 - `produksjonsplan`
 - `produksjonskategori`
 - `produksjonskategori_talent_mal` (Talent-maler per kategori)
+- `produksjonskategori_plan_mal_element` (Plan-maler per kategori - overskrifter og hendelser)
 - `produksjon` (uten FK til produksjonskategori fra og med migrasjon 011)
 - `produksjon_bemanning`
 

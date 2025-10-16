@@ -164,6 +164,100 @@ const removeTalentFromMal = async (req, res) => {
   }
 };
 
+// ============================================================================
+// KATEGORI PLAN-MAL
+// ============================================================================
+
+const getPlanMal = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const planMal = await service.findPlanMalByKategoriId(id);
+    res.json({ planMal });
+  } catch (error) {
+    console.error('[KATEGORI] Get plan-mal error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+const addPlanMalElement = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { type, navn, varighetMinutter, parentId, rekkefølge } = req.body;
+    
+    const element = await service.addPlanMalElement({
+      kategoriId: id,
+      type,
+      navn,
+      varighetMinutter,
+      parentId,
+      rekkefølge,
+    });
+    
+    res.status(201).json({ element });
+  } catch (error) {
+    console.error('[KATEGORI] Add plan-mal element error:', error);
+    if (error.code === '23514') { // Check constraint violation
+      return res.status(400).json({ error: 'Ugyldig element-struktur. Overskrifter må ha parent_id=null, hendelser må ha parent_id og varighet.' });
+    }
+    if (error.code === '23503') {
+      return res.status(400).json({ error: 'Ugyldig kategori eller parent' });
+    }
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+const updatePlanMalElement = async (req, res) => {
+  try {
+    const { elementId } = req.params;
+    const { navn, varighetMinutter, rekkefølge } = req.body;
+    
+    const element = await service.updatePlanMalElement(elementId, { navn, varighetMinutter, rekkefølge });
+    
+    if (!element) {
+      return res.status(404).json({ error: 'Plan-mal element not found' });
+    }
+    
+    res.json({ element });
+  } catch (error) {
+    console.error('[KATEGORI] Update plan-mal element error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+const updatePlanMalRekkefølge = async (req, res) => {
+  try {
+    const { elementId } = req.params;
+    const { rekkefølge } = req.body;
+    
+    const element = await service.updatePlanMalRekkefølge(elementId, rekkefølge);
+    
+    if (!element) {
+      return res.status(404).json({ error: 'Plan-mal element not found' });
+    }
+    
+    res.json({ element });
+  } catch (error) {
+    console.error('[KATEGORI] Update plan-mal rekkefølge error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+const removePlanMalElement = async (req, res) => {
+  try {
+    const { elementId } = req.params;
+    const deleted = await service.removePlanMalElement(elementId);
+    
+    if (!deleted) {
+      return res.status(404).json({ error: 'Plan-mal element not found' });
+    }
+    
+    res.json({ message: 'Plan-mal element deleted successfully' });
+  } catch (error) {
+    console.error('[KATEGORI] Remove plan-mal element error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 module.exports = {
   // Kategorier
   listKategorier,
@@ -177,5 +271,12 @@ module.exports = {
   addTalentToMal,
   updateTalentInMal,
   removeTalentFromMal,
+  
+  // Kategori plan-mal
+  getPlanMal,
+  addPlanMalElement,
+  updatePlanMalElement,
+  updatePlanMalRekkefølge,
+  removePlanMalElement,
 };
 

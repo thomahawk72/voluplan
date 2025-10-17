@@ -17,14 +17,13 @@ describe('Produksjon Service', () => {
           id: 1,
           produksjon_id: 1,
           person_id: 1,
-          talent_id: 1,
+          talent_navn: 'FOH Lyd',
+          talent_kategori: 'Lyd',
           notater: 'Test notater',
           status: 'bekreftet',
           first_name: 'Test',
           last_name: 'Bruker',
-          email: 'test@example.com',
-          talent_navn: 'FOH Lyd',
-          talent_kategori: 'Lyd'
+          email: 'test@example.com'
         }
       ];
 
@@ -34,20 +33,21 @@ describe('Produksjon Service', () => {
 
       expect(result).toEqual(mockBemanning);
       expect(db.query).toHaveBeenCalledWith(
-        expect.stringContaining('talent_navn'),
+        expect.stringContaining('pb.talent_navn'),
         [1]
       );
       expect(db.query).toHaveBeenCalledWith(
-        expect.stringContaining('talent_kategori'),
+        expect.stringContaining('pb.talent_kategori_sti'),
         [1]
       );
       expect(db.query).toHaveBeenCalledWith(
         expect.stringContaining('FROM produksjon_bemanning pb'),
         [1]
       );
-      expect(db.query).toHaveBeenCalledWith(
-        expect.stringContaining('JOIN talent t ON pb.talent_id = t.id'),
-        [1]
+      // IKKE LENGER JOIN MED TALENT - produksjoner er uavhengige av talent-hierarkiet
+      expect(db.query).not.toHaveBeenCalledWith(
+        expect.stringContaining('JOIN talent'),
+        expect.anything()
       );
     });
 
@@ -67,12 +67,13 @@ describe('Produksjon Service', () => {
   });
 
   describe('addBemanning', () => {
-    it('skal legge til bemanning med talentId', async () => {
+    it('skal legge til bemanning med talentNavn og talentKategoriSti', async () => {
       const mockBemanning = {
         id: 1,
         produksjon_id: 1,
         person_id: 1,
-        talent_id: 1,
+        talent_navn: 'FOH Lyd',
+        talent_kategori_sti: 'Lyd → Liveproduksjon',
         notater: 'Test notater',
         status: 'planlagt'
       };
@@ -82,15 +83,16 @@ describe('Produksjon Service', () => {
       const result = await bemanningService.addBemanning({
         produksjonId: 1,
         personId: 1,
-        talentId: 1,
+        talentNavn: 'FOH Lyd',
+        talentKategoriSti: 'Lyd → Liveproduksjon',
         notater: 'Test notater',
         status: 'planlagt'
       });
 
       expect(result).toEqual(mockBemanning);
       expect(db.query).toHaveBeenCalledWith(
-        'INSERT INTO produksjon_bemanning (produksjon_id, person_id, talent_id, notater, status) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-        [1, 1, 1, 'Test notater', 'planlagt']
+        'INSERT INTO produksjon_bemanning (produksjon_id, person_id, talent_navn, talent_kategori_sti, notater, status) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+        [1, 1, 'FOH Lyd', 'Lyd → Liveproduksjon', 'Test notater', 'planlagt']
       );
     });
 
@@ -99,7 +101,8 @@ describe('Produksjon Service', () => {
         id: 1,
         produksjon_id: 1,
         person_id: 1,
-        talent_id: 1,
+        talent_navn: 'FOH Lyd',
+        talent_kategori_sti: 'Lyd',
         notater: null,
         status: 'planlagt'
       };
@@ -109,13 +112,14 @@ describe('Produksjon Service', () => {
       const result = await bemanningService.addBemanning({
         produksjonId: 1,
         personId: 1,
-        talentId: 1
+        talentNavn: 'FOH Lyd',
+        talentKategoriSti: 'Lyd'
       });
 
       expect(result).toEqual(mockBemanning);
       expect(db.query).toHaveBeenCalledWith(
         expect.any(String),
-        [1, 1, 1, undefined, 'planlagt']
+        [1, 1, 'FOH Lyd', 'Lyd', undefined, 'planlagt']
       );
     });
   });

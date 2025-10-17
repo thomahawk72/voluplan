@@ -171,12 +171,13 @@ CREATE TABLE IF NOT EXISTS produksjon_oppmote (
 CREATE TABLE IF NOT EXISTS produksjon_talent_behov (
     id SERIAL PRIMARY KEY,
     produksjon_id INTEGER NOT NULL REFERENCES produksjon(id) ON DELETE CASCADE,
-    talent_id INTEGER NOT NULL REFERENCES talent(id) ON DELETE CASCADE,
+    talent_navn VARCHAR(100) NOT NULL,
+    talent_kategori_sti TEXT NOT NULL,
     antall INTEGER NOT NULL DEFAULT 1,
     beskrivelse TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (produksjon_id, talent_id),
+    UNIQUE (produksjon_id, talent_navn),
     CONSTRAINT check_antall_positiv CHECK (antall > 0)
 );
 
@@ -188,12 +189,13 @@ CREATE TABLE IF NOT EXISTS produksjon_bemanning (
     id SERIAL PRIMARY KEY,
     produksjon_id INTEGER NOT NULL REFERENCES produksjon(id) ON DELETE CASCADE,
     person_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    talent_id INTEGER NOT NULL REFERENCES talent(id) ON DELETE RESTRICT,
+    talent_navn VARCHAR(100) NOT NULL,
+    talent_kategori_sti TEXT NOT NULL,
     notater TEXT,
     status VARCHAR(50) DEFAULT 'planlagt',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (produksjon_id, person_id, talent_id)
+    UNIQUE (produksjon_id, person_id, talent_navn)
 );
 
 CREATE INDEX idx_users_email ON users(email);

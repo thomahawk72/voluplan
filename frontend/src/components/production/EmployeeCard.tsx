@@ -36,7 +36,6 @@ import BemanningDrawer from './BemanningDrawer';
 interface TalentBehov {
   id: number;
   produksjon_id: number;
-  talent_id: number;
   talent_navn: string;
   talent_kategori: string;
   antall: number;
@@ -81,7 +80,6 @@ const EmployeeCard: React.FC<EmployeeCardProps> = ({
 }) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedTalent, setSelectedTalent] = useState<{
-    talent_id: number;
     talent_navn: string;
     talent_kategori: string;
     antall: number;
@@ -107,23 +105,23 @@ const EmployeeCard: React.FC<EmployeeCardProps> = ({
   };
 
   // Helper: Hent antall fylt for et talent
-  const getAntallFylt = (talentId: number): number => {
+  const getAntallFylt = (talentNavn: string): number => {
     const alleBemanning = getAllBemanning();
-    return alleBemanning.filter(b => b.talent_id === talentId).length;
+    return alleBemanning.filter(b => b.talent_navn === talentNavn).length;
   };
 
   // Helper: Hent tildelte medarbeidere for et talent
-  const getTildelteMedarbeidere = (talentId: number): Bemanning[] => {
+  const getTildelteMedarbeidere = (talentNavn: string): Bemanning[] => {
     const alleBemanning = getAllBemanning();
-    return alleBemanning.filter(b => b.talent_id === talentId);
+    return alleBemanning.filter(b => b.talent_navn === talentNavn);
   };
 
   // Bygg talent-behov med status
   const buildTalentBehovMedStatus = (): TalentBehovMedStatus[] => {
     return talentBehov.map(behov => {
-      const antallFylt = getAntallFylt(behov.talent_id);
+      const antallFylt = getAntallFylt(behov.talent_navn);
       const erFylt = antallFylt >= behov.antall;
-      const tildelte = getTildelteMedarbeidere(behov.talent_id);
+      const tildelte = getTildelteMedarbeidere(behov.talent_navn);
       const progressPercent = Math.min((antallFylt / behov.antall) * 100, 100);
       
       return {
@@ -173,7 +171,6 @@ const EmployeeCard: React.FC<EmployeeCardProps> = ({
 
   const handleTalentClick = (behov: TalentBehovMedStatus) => {
     setSelectedTalent({
-      talent_id: behov.talent_id,
       talent_navn: behov.talent_navn,
       talent_kategori: behov.talent_kategori,
       antall: behov.antall,

@@ -12,10 +12,17 @@ import {
   Tab,
   TextField,
   Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  IconButton,
 } from '@mui/material';
 import {
   ExpandMore,
   ChevronRight,
+  Add as AddIcon,
+  Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { produksjonAPI } from '../../services/api';
 import TalentMalEditor from './TalentMalEditor';
@@ -41,7 +48,15 @@ const ProduksjonsKategoriMal: React.FC = () => {
   const [beskrivelse, setBeskrivelse] = useState('');
   const [plassering, setPlassering] = useState('');
   const [activeTab, setActiveTab] = useState<'talenter' | 'oppmote' | 'plan'>('talenter');
-  const [confirmOpen, setConfirmOpen] = useState(false);
+  
+  // Ny kategori dialog
+  const [newKategoriOpen, setNewKategoriOpen] = useState(false);
+  const [newKategoriNavn, setNewKategoriNavn] = useState('');
+  const [newKategoriBeskrivelse, setNewKategoriBeskrivelse] = useState('');
+  const [newKategoriPlassering, setNewKategoriPlassering] = useState('');
+  
+  // Slett kategori confirm
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -76,6 +91,56 @@ const ProduksjonsKategoriMal: React.FC = () => {
     }
   };
 
+  const handleCreateKategori = async () => {
+    try {
+      setError(null);
+      const { kategori } = await produksjonAPI.createKategori({
+        navn: newKategoriNavn,
+        beskrivelse: newKategoriBeskrivelse || undefined,
+        plassering: newKategoriPlassering || undefined,
+      });
+
+      setSaved(`Produksjonskategori "${kategori.navn}" opprettet!`);
+      await fetchData();
+      
+      // Reset og lukk dialog
+      setNewKategoriNavn('');
+      setNewKategoriBeskrivelse('');
+      setNewKategoriPlassering('');
+      setNewKategoriOpen(false);
+
+      // Velg den nye kategorien og oppdater felter
+      setSelectedKategori(kategori.id);
+      setNavn(kategori.navn);
+      setBeskrivelse(kategori.beskrivelse || '');
+      setPlassering(kategori.plassering || '');
+      setActiveTab('plan');
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Kunne ikke opprette kategori');
+      console.error(err);
+    }
+  };
+
+  const handleDeleteKategori = async () => {
+    if (!selectedKategori) return;
+
+    try {
+      setError(null);
+      const kategoriNavn = kategorier.find(k => k.id === selectedKategori)?.navn;
+      
+      await produksjonAPI.deleteKategori(selectedKategori, true); // deep=true for å slette maler også
+
+      setSaved(`Produksjonskategori "${kategoriNavn}" slettet!`);
+      setSelectedKategori(null);
+      setDeleteConfirmOpen(false);
+      await fetchData();
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Kunne ikke slette kategori');
+      console.error(err);
+      setDeleteConfirmOpen(false);
+    }
+  };
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
@@ -100,6 +165,15 @@ const ProduksjonsKategoriMal: React.FC = () => {
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '300px 1fr' }, gap: 3 }}>
         {/* Venstre: Produksjonskategorier */}
         <Paper sx={{ p: 2, height: 'fit-content', position: 'sticky', top: 16 }}>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            fullWidth
+            sx={{ mb: 2 }}
+            onClick={() => setNewKategoriOpen(true)}
+          >
+            Ny kategori
+          </Button>
           <List>
             {kategorier.map((kategori) => (
               <ListItemButton
@@ -170,7 +244,8 @@ const ProduksjonsKategoriMal: React.FC = () => {
                 <Button
                   color="error"
                   variant="outlined"
-                  onClick={() => setConfirmOpen(true)}
+                  startIcon={<DeleteIcon />}
+                  onClick={() => setDeleteConfirmOpen(true)}
                 >
                   Slett kategori
                 </Button>
@@ -203,32 +278,14 @@ const ProduksjonsKategoriMal: React.FC = () => {
               </Box>
 
               <ConfirmDialog
-                open={confirmOpen}
-                title="Slett kategori"
-                message={`Slette produksjonskategori "${navn}"? Dette kan ikke angres.`}
+                open={deleteConfirmOpen}
+                title="Slett produksjonskategori"
+                message={`Er du sikker på at du vil slette produksjonskategorien "${navn}"? Dette vil også slette alle tilknyttede maler (plan, talenter, oppmøtetider). Dette kan ikke angres.`}
                 confirmText="Slett"
                 cancelText="Avbryt"
                 destructive
-                onCancel={() => setConfirmOpen(false)}
-                onConfirm={async () => {
-                  if (!selectedKategori) return;
-                  try {
-                    setError(null);
-                    setSaved(null);
-                    await produksjonAPI.deleteKategori(selectedKategori);
-                    const data = await produksjonAPI.getAllKategorier();
-                    setKategorier(data.kategorier);
-                    setSelectedKategori(null);
-                    setNavn('');
-                    setBeskrivelse('');
-                    setPlassering('');
-                    setSaved('Kategori slettet');
-                  } catch (e: any) {
-                    setError(e?.response?.data?.error || 'Kunne ikke slette kategori');
-                  } finally {
-                    setConfirmOpen(false);
-                  }
-                }}
+                onCancel={() => setDeleteConfirmOpen(false)}
+                onConfirm={handleDeleteKategori}
               />
 
               {/* Faner */}
@@ -244,6 +301,7 @@ const ProduksjonsKategoriMal: React.FC = () => {
 
               {activeTab === 'plan' && (
                 <PlanMalEditor
+                  key={`plan-${selectedKategori}`}
                   kategoriId={selectedKategori}
                   onSave={() => {
                     setSaved('Plan-mal oppdatert');
@@ -254,6 +312,7 @@ const ProduksjonsKategoriMal: React.FC = () => {
 
               {activeTab === 'talenter' && (
                 <TalentMalEditor
+                  key={`talenter-${selectedKategori}`}
                   kategoriId={selectedKategori}
                   kategoriNavn={navn}
                   onSave={() => {}}
@@ -278,6 +337,49 @@ const ProduksjonsKategoriMal: React.FC = () => {
           )}
         </Paper>
       </Box>
+
+      {/* Dialog for ny kategori */}
+      <Dialog open={newKategoriOpen} onClose={() => setNewKategoriOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Opprett ny produksjonskategori</DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+            <TextField
+              label="Navn *"
+              value={newKategoriNavn}
+              onChange={(e) => setNewKategoriNavn(e.target.value)}
+              fullWidth
+              autoFocus
+            />
+            <TextField
+              label="Beskrivelse"
+              value={newKategoriBeskrivelse}
+              onChange={(e) => setNewKategoriBeskrivelse(e.target.value)}
+              fullWidth
+              multiline
+              rows={2}
+            />
+            <TextField
+              label="Plassering"
+              placeholder="F.eks. Hovedscenen, Backstage"
+              value={newKategoriPlassering}
+              onChange={(e) => setNewKategoriPlassering(e.target.value)}
+              fullWidth
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setNewKategoriOpen(false)}>
+            Avbryt
+          </Button>
+          <Button 
+            variant="contained" 
+            onClick={handleCreateKategori}
+            disabled={!newKategoriNavn.trim()}
+          >
+            Opprett
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

@@ -35,11 +35,18 @@ const TalentMalEditor: React.FC<Props> = ({ kategoriId, kategoriNavn, onSave }) 
   const fetchData = async () => {
     try {
       setLoading(true);
+      
+      // VIKTIG: Reset state først for å unngå at gammel data vises
+      setSelectionsByKategori(new Map());
+      setApneKategorier(new Set());
+      
       const [kategoriData, talentData, talentMalData] = await Promise.all([
         talentAPI.getAllKategorier(),
         talentAPI.getAll(),
         produksjonAPI.getTalentMal(kategoriId),
       ]);
+
+      console.log(`[TalentMalEditor] KategoriId: ${kategoriId}, Talent-mal count:`, talentMalData.talentMal.length);
 
       setKategorier(kategoriData.kategorier);
 
@@ -66,6 +73,13 @@ const TalentMalEditor: React.FC<Props> = ({ kategoriId, kategoriNavn, onSave }) 
       selMap.forEach((selections) => {
         selections.sort((a, b) => a.talent.navn.localeCompare(b.talent.navn));
       });
+
+      console.log('[TalentMalEditor] Nye selections per kategori:', Array.from(selMap.entries()).map(([katId, sels]) => ({
+        kategoriId: katId,
+        totalTalents: sels.length,
+        selectedCount: sels.filter(s => s.selected).length,
+        talents: sels.map(s => ({ navn: s.talent.navn, selected: s.selected }))
+      })));
 
       setSelectionsByKategori(selMap);
 

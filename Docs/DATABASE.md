@@ -4,7 +4,7 @@
 Voluplan bruker PostgreSQL som database for å håndtere brukere, talenter (3-nivå hierarki), produksjoner og bemanningsplanlegging.
 
 **Siste oppdatering:** 2025-10-17  
-**Versjon:** 016 (Produksjon talent-behov - kopieres fra kategori-mal)
+**Versjon:** 019 (Fjernet FK-avhengighet mellom produksjoner og talent-hierarkiet)
 
 ## Database Tabeller
 
@@ -484,30 +484,32 @@ const oppmoteTidspunkt = new Date(produksjonTid.getTime() - (minutter_før_start
 
 ---
 
-### 7e. `produksjon_talent_behov` - Talent-behov for individuelle produksjoner (Migrasjon 016)
+### 7e. `produksjon_talent_behov` - Talent-behov for individuelle produksjoner (Migrasjon 016, oppdatert 019)
 Kopieres fra `produksjonskategori_talent_mal` når produksjon opprettes med `applyKategoriMal=true`. Definerer hvor mange av hvert talent som trengs for denne spesifikke produksjonen.
+
+**VIKTIG:** Talent-data kopieres som tekst (talent_navn, talent_kategori_sti) og har INGEN FK til talent-hierarkiet. Dette gjør produksjoner uavhengige av endringer i talent-hierarkiet.
 
 **Kolonner:**
 - `id` (SERIAL PRIMARY KEY)
 - `produksjon_id` (INTEGER NOT NULL) - Referanse til `produksjon.id`
-- `talent_id` (INTEGER NOT NULL) - Referanse til `talent.id`
+- `talent_navn` (VARCHAR(100) NOT NULL) - Navn på talentet (kopieres fra talent-hierarkiet)
+- `talent_kategori_sti` (TEXT NOT NULL) - Full kategori-sti, f.eks. "Lyd → Liveproduksjon → FOH"
 - `antall` (INTEGER NOT NULL DEFAULT 1) - Hvor mange personer med dette talentet som trengs
 - `beskrivelse` (TEXT) - Valgfri beskrivelse av rollen/behovet
 - `created_at` (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
 - `updated_at` (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
 
 **Constraints:**
-- `UNIQUE (produksjon_id, talent_id)` - Ett talent-behov per talent per produksjon
+- `UNIQUE (produksjon_id, talent_navn)` - Ett talent-behov per talent-navn per produksjon
 - `CHECK (antall > 0)` - Antall må være positivt
 
 **Relasjoner:**
 - `produksjon_id` → `produksjon.id` (ON DELETE CASCADE)
-- `talent_id` → `talent.id` (ON DELETE CASCADE)
+- **INGEN FK til talent-hierarkiet** (data kopieres ved opprettelse)
 
 **Indekser:**
 - Primærnøkkel på `id`
 - Indeks på `produksjon_id`
-- Indeks på `talent_id`
 
 **Bruk i API:**
 ```javascript
@@ -532,14 +534,17 @@ Response: {
 
 ---
 
-### 8. `produksjon_bemanning` - Kobling mellom produksjoner og personer
-Junction-tabell som håndterer mange-til-mange-forholdet mellom produksjoner, personer og kompetanser.
+### 8. `produksjon_bemanning` - Kobling mellom produksjoner og personer (Oppdatert v019)
+Junction-tabell som håndterer mange-til-mange-forholdet mellom produksjoner, personer og talents.
+
+**VIKTIG:** Talent-data kopieres som tekst (talent_navn, talent_kategori_sti) og har INGEN FK til talent-hierarkiet. Dette gjør produksjoner uavhengige av endringer i talent-hierarkiet.
 
 **Kolonner:**
 - `id` (SERIAL PRIMARY KEY)
 - `produksjon_id` (INTEGER NOT NULL) - Referanse til `produksjon.id`
 - `person_id` (INTEGER NOT NULL) - Referanse til `users.id`
-- `kompetanse_id` (INTEGER NOT NULL) - Referanse til `kompetanse.id`
+- `talent_navn` (VARCHAR(100) NOT NULL) - Navn på talentet (kopieres fra produksjon_talent_behov)
+- `talent_kategori_sti` (TEXT NOT NULL) - Full kategori-sti for talentet
 - `notater` (TEXT) - Notater for denne bemanningen
 - `status` (VARCHAR(50) DEFAULT 'planlagt') - Status (f.eks. "planlagt", "bekreftet", "avlyst")
 - `created_at` (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
@@ -548,17 +553,16 @@ Junction-tabell som håndterer mange-til-mange-forholdet mellom produksjoner, pe
 **Relasjoner:**
 - `produksjon_id` → `produksjon.id` (ON DELETE CASCADE)
 - `person_id` → `users.id` (ON DELETE CASCADE)
-- `kompetanse_id` → `kompetanse.id` (ON DELETE RESTRICT)
+- **INGEN FK til talent-hierarkiet** (data kopieres ved tildeling)
 
 **Constraints:**
-- UNIQUE (`produksjon_id`, `person_id`, `kompetanse_id`)
+- UNIQUE (`produksjon_id`, `person_id`, `talent_navn`)
 
 **Indekser:**
 - Primærnøkkel på `id`
-- Unik indeks på kombinasjonen (`produksjon_id`, `person_id`, `kompetanse_id`)
+- Unik indeks på kombinasjonen (`produksjon_id`, `person_id`, `talent_navn`)
 - Indeks på `produksjon_id`
 - Indeks på `person_id`
-- Indeks på `kompetanse_id`
 
 ---
 
@@ -646,11 +650,11 @@ Junction-tabell som håndterer mange-til-mange-forholdet mellom produksjoner, pe
   - `produksjon_bemanning.produksjon_id` → `produksjon.id` (ON DELETE CASCADE)
   - `produksjon_bemanning.person_id` → `users.id` (ON DELETE CASCADE)
 
-#### 6. Produksjon_bemanning → Kompetanse
-- **Type:** Many-to-One (N:1)
-- **Beskrivelse:** Hver bemanningspost er knyttet til én kompetanse
-- **Relasjon:** `produksjon_bemanning.kompetanse_id` → `kompetanse.id`
-- **On Delete:** RESTRICT (kan ikke slette kompetanse som brukes i bemanning)
+#### 6. Produksjon → Talent (INGEN direkte relasjon) ← **Oppdatert v019**
+- **Type:** Ingen direkte FK-relasjon
+- **Beskrivelse:** Produksjoner og bemanning kopierer talent-navn og kategori-sti som tekst
+- **Relasjon:** INGEN - data kopieres ved opprettelse/tildeling
+- **Fordel:** Produksjoner er uavhengige av endringer i talent-hierarkiet. Talents kan slettes fra hierarkiet uten å påvirke eksisterende produksjoner.
 
 #### 7. Bruker → Password Reset Tokens
 - **Type:** One-to-Many (1:N)
@@ -664,12 +668,12 @@ Junction-tabell som håndterer mange-til-mange-forholdet mellom produksjoner, pe
 
 ### Many-to-Many med Metadata
 Relasjonen mellom produksjoner og personer er implementert som en rik many-to-many-relasjon:
-- **En person** kan ha **flere roller** i **samme produksjon** (ulike kompetanser)
+- **En person** kan ha **flere roller** i **samme produksjon** (ulike talents)
 - **En person** kan være med i **flere produksjoner**
-- **En produksjon** har **mange personer** med **ulike kompetanser**
+- **En produksjon** har **mange personer** med **ulike talents**
 
 Junction-tabellen `produksjon_bemanning` inneholder ikke bare koblingen, men også:
-- Hvilken **kompetanse** personen bruker i produksjonen
+- Hvilken **talent** personen bruker i produksjonen
 - **Notater** for denne spesifikke bemanningen
 - **Status** (planlagt, bekreftet, avlyst, etc.)
 
@@ -766,6 +770,7 @@ Database-skjemaet er definert i følgende filer:
 - `backend/schema.sql` - Hovedskjema for alle tabeller
 - `backend/migrations/001_add_kompetanse_tables.sql` - Kompetansetabeller
 - `backend/migrations/002_add_produksjon_tables.sql` - Produksjonstabeller
+- `backend/migrations/019_decouple_produksjon_from_talent_hierarchy.sql` - **VIKTIG:** Fjernet FK fra produksjoner til talent-hierarkiet, kopier talent-data som tekst i stedet
 
 For å sette opp databasen fra scratch:
 ```bash
@@ -795,10 +800,10 @@ Eksempel på test-bruker:
 ## Notater
 
 ### Cascade-regler
-- Når en **produksjon slettes**: Alle bemanninger for den produksjonen slettes automatisk (CASCADE)
+- Når en **produksjon slettes**: Alle bemanninger, plan-elementer, oppmøter og talent-behov for den produksjonen slettes automatisk (CASCADE)
 - Når en **bruker slettes**: Alle bemanninger og password reset tokens slettes automatisk (CASCADE)
-- Når en **kompetansekategori** skal slettes: Må ikke ha tilknyttede kompetanser (RESTRICT)
-- Når en **kompetanse** skal slettes: Må ikke brukes i noen bemanning (RESTRICT)
+- Når en **talentkategori** skal slettes: Må ikke ha tilknyttede talents (RESTRICT)
+- Når en **talent** slettes fra hierarkiet: Talent-maler i produksjonskategorier slettes (CASCADE), men **produksjoner påvirkes IKKE** fordi de har kopier av talent-data som tekst ← **Oppdatert i v019**
 
 ### Soft Delete
 Systemet bruker `is_active` på brukere for soft delete i stedet for å slette brukere direkte. Dette bevarer historisk data i bemanningsoppføringer.

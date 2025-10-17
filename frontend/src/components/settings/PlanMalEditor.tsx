@@ -63,6 +63,7 @@ const PlanMalEditor: React.FC<Props> = ({ kategoriId, onSave }) => {
 
   useEffect(() => {
     fetchPlanMal();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kategoriId]);
 
   const fetchPlanMal = async () => {

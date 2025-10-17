@@ -23,12 +23,13 @@ const getBemanning = async (req, res) => {
 const addBemanning = async (req, res) => {
   try {
     const { id } = req.params;
-    const { personId, talentId, notater, status } = req.body;
+    const { personId, talentNavn, talentKategoriSti, notater, status } = req.body;
     
     const bemanning = await service.addBemanning({
       produksjonId: id,
       personId,
-      talentId,
+      talentNavn,
+      talentKategoriSti,
       notater,
       status,
     });
@@ -37,7 +38,7 @@ const addBemanning = async (req, res) => {
   } catch (error) {
     console.error('[BEMANNING] Add bemanning error:', error);
     if (error.code === '23503') {
-      return res.status(400).json({ error: 'Ugyldig produksjon, person eller talent' });
+      return res.status(400).json({ error: 'Ugyldig produksjon eller person' });
     }
     if (error.code === '23505') {
       return res.status(400).json({ error: 'Person er allerede tildelt dette talentet i produksjonen' });

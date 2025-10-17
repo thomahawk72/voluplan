@@ -26,7 +26,8 @@ router.get('/:id/bemanning', authenticateToken, controller.getBemanning);
 // Legg til person i produksjon
 router.post('/:id/bemanning', authenticateToken, requireRole(['admin']), [
   body('personId').isInt(),
-  body('talentId').isInt(),
+  body('talentNavn').trim().notEmpty().withMessage('Talent navn er påkrevd'),
+  body('talentKategoriSti').trim().notEmpty().withMessage('Talent kategori sti er påkrevd'),
   body('notater').optional().trim(),
   body('status').optional().isIn(['planlagt', 'bekreftet', 'avlyst']),
 ], validate, controller.addBemanning);

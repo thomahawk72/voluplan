@@ -247,7 +247,7 @@ const remove = async (req, res) => {
   } catch (error) {
     console.error('[KOMPETANSE] Delete kompetanse error:', error);
     if (error.code === '23503') { // Foreign key violation
-      return res.status(400).json({ error: 'Kan ikke slette talent som brukes i produksjoner' });
+      return res.status(400).json({ error: 'Kan ikke slette talent: ' + (error.detail || 'Foreign key constraint') });
     }
     res.status(500).json({ error: 'Internal server error' });
   }

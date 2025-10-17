@@ -11,33 +11,24 @@ const db = require('../../../shared/config/database');
 const findBemanningByProduksjonId = async (produksjonId) => {
   const result = await db.query(
     `SELECT 
-      pb.*,
+      pb.id,
+      pb.produksjon_id,
+      pb.person_id,
+      pb.talent_navn,
+      pb.talent_kategori_sti as talent_kategori,
+      pb.notater,
+      pb.status,
+      pb.created_at,
+      pb.updated_at,
       u.first_name,
       u.last_name,
-      u.email,
-      t.navn as talent_navn,
-      COALESCE(
-        CASE 
-          WHEN tk3.parent_id IS NOT NULL AND tk2.parent_id IS NOT NULL THEN 
-            tk1.navn || ' → ' || tk2.navn || ' → ' || tk3.navn
-          WHEN tk3.parent_id IS NOT NULL THEN 
-            tk2.navn || ' → ' || tk3.navn
-          ELSE tk3.navn
-        END, 
-        tk3.navn
-      ) as talent_kategori
+      u.email
     FROM produksjon_bemanning pb
     JOIN users u ON pb.person_id = u.id
-    JOIN talent t ON pb.talent_id = t.id
-    LEFT JOIN talentkategori tk3 ON t.kategori_id = tk3.id
-    LEFT JOIN talentkategori tk2 ON tk3.parent_id = tk2.id
-    LEFT JOIN talentkategori tk1 ON tk2.parent_id = tk1.id
     WHERE pb.produksjon_id = $1
     ORDER BY 
-      COALESCE(tk1.navn, tk2.navn, tk3.navn), 
-      COALESCE(tk2.navn, tk3.navn),
-      tk3.navn,
-      t.navn, 
+      pb.talent_kategori_sti,
+      pb.talent_navn, 
       u.last_name, 
       u.first_name`,
     [produksjonId]
@@ -49,10 +40,10 @@ const findBemanningByProduksjonId = async (produksjonId) => {
  * Legg til person i produksjon
  */
 const addBemanning = async (data) => {
-  const { produksjonId, personId, talentId, notater, status } = data;
+  const { produksjonId, personId, talentNavn, talentKategoriSti, notater, status } = data;
   const result = await db.query(
-    'INSERT INTO produksjon_bemanning (produksjon_id, person_id, talent_id, notater, status) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-    [produksjonId, personId, talentId, notater, status || 'planlagt']
+    'INSERT INTO produksjon_bemanning (produksjon_id, person_id, talent_navn, talent_kategori_sti, notater, status) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+    [produksjonId, personId, talentNavn, talentKategoriSti, notater, status || 'planlagt']
   );
   return result.rows[0];
 };

@@ -150,9 +150,9 @@ const applyKategoriMalToProduksjon = async (produksjonId, kategoriId, produksjon
     for (const talent of talentMal) {
       await db.query(
         `INSERT INTO produksjon_talent_behov 
-          (produksjon_id, talent_id, antall, beskrivelse) 
-        VALUES ($1, $2, $3, $4)`,
-        [produksjonId, talent.talent_id, talent.antall, talent.beskrivelse]
+          (produksjon_id, talent_navn, talent_kategori_sti, antall, beskrivelse) 
+        VALUES ($1, $2, $3, $4, $5)`,
+        [produksjonId, talent.talent_navn, talent.talent_kategori, talent.antall, talent.beskrivelse]
       );
     }
   }
@@ -264,29 +264,17 @@ const findByUserId = async (userId) => {
 const findTalentBehovByProduksjonId = async (produksjonId) => {
   const result = await db.query(
     `SELECT 
-      ptb.*,
-      t.navn as talent_navn,
-      COALESCE(
-        CASE 
-          WHEN tk3.parent_id IS NOT NULL AND tk2.parent_id IS NOT NULL THEN 
-            tk1.navn || ' → ' || tk2.navn || ' → ' || tk3.navn
-          WHEN tk3.parent_id IS NOT NULL THEN 
-            tk2.navn || ' → ' || tk3.navn
-          ELSE tk3.navn
-        END, 
-        tk3.navn
-      ) as talent_kategori
+      ptb.id,
+      ptb.produksjon_id,
+      ptb.talent_navn,
+      ptb.talent_kategori_sti as talent_kategori,
+      ptb.antall,
+      ptb.beskrivelse,
+      ptb.created_at,
+      ptb.updated_at
     FROM produksjon_talent_behov ptb
-    JOIN talent t ON ptb.talent_id = t.id
-    LEFT JOIN talentkategori tk3 ON t.kategori_id = tk3.id
-    LEFT JOIN talentkategori tk2 ON tk3.parent_id = tk2.id
-    LEFT JOIN talentkategori tk1 ON tk2.parent_id = tk1.id
     WHERE ptb.produksjon_id = $1
-    ORDER BY 
-      COALESCE(tk1.navn, tk2.navn, tk3.navn),
-      COALESCE(tk2.navn, tk3.navn),
-      tk3.navn,
-      t.navn`,
+    ORDER BY ptb.talent_kategori_sti, ptb.talent_navn`,
     [produksjonId]
   );
   return result.rows;

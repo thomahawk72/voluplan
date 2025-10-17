@@ -30,6 +30,8 @@ const SelectableTalentList: React.FC<SelectableTalentListProps> = ({
   onAntallChange,
   onBeskrivelseChange,
 }) => {
+  console.log('[SelectableTalentList] Render med selections:', selections.map(s => ({ navn: s.talent.navn, selected: s.selected })));
+  
   return (
     <Box sx={{ mt: 1 }}>
       {selections.map((selection, index) => (

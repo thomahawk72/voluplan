@@ -137,7 +137,6 @@ export interface Bemanning {
   id: number;
   produksjon_id: number;
   person_id: number;
-  talent_id: number;
   first_name: string;
   last_name: string;
   email: string;
@@ -229,7 +228,8 @@ export const produksjonAPI = {
 
   addBemanning: async (id: number, data: {
     personId: number;
-    talentId: number;
+    talentNavn: string;
+    talentKategoriSti: string;
     notater?: string;
     status?: 'planlagt' | 'bekreftet' | 'avlyst';
   }): Promise<{ bemanning: Bemanning }> => {
@@ -386,8 +386,14 @@ export const produksjonAPI = {
     return response.data;
   },
 
-  deleteKategori: async (id: number): Promise<{ message: string }> => {
-    const response = await api.delete(`/produksjon/kategorier/${id}`);
+  createKategori: async (data: { navn: string; beskrivelse?: string; plassering?: string }): Promise<{ kategori: any }> => {
+    const response = await api.post('/produksjon/kategorier', data);
+    return response.data;
+  },
+
+  deleteKategori: async (id: number, deep: boolean = false): Promise<{ message: string }> => {
+    const url = deep ? `/produksjon/kategorier/${id}?deep=true` : `/produksjon/kategorier/${id}`;
+    const response = await api.delete(url);
     return response.data;
   },
 };

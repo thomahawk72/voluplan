@@ -105,12 +105,13 @@ describe('Produksjon API - Bemanning Endpoints', () => {
   });
 
   describe('POST /api/produksjon/:id/bemanning', () => {
-    it('skal legge til bemanning med talentId', async () => {
+    it('skal legge til bemanning med talentNavn og talentKategoriSti', async () => {
       const mockBemanning = {
         id: 1,
         produksjon_id: 1,
         person_id: 1,
-        talent_id: 1,
+        talent_navn: 'FOH Lyd',
+        talent_kategori_sti: 'Lyd → Liveproduksjon',
         notater: 'Test notater',
         status: 'planlagt'
       };
@@ -121,7 +122,8 @@ describe('Produksjon API - Bemanning Endpoints', () => {
         .post('/api/produksjon/1/bemanning')
         .send({
           personId: 1,
-          talentId: 1,
+          talentNavn: 'FOH Lyd',
+          talentKategoriSti: 'Lyd → Liveproduksjon',
           notater: 'Test notater',
           status: 'planlagt'
         })
@@ -131,18 +133,20 @@ describe('Produksjon API - Bemanning Endpoints', () => {
       expect(bemanningService.addBemanning).toHaveBeenCalledWith({
         produksjonId: '1',
         personId: 1,
-        talentId: 1,
+        talentNavn: 'FOH Lyd',
+        talentKategoriSti: 'Lyd → Liveproduksjon',
         notater: 'Test notater',
         status: 'planlagt'
       });
     });
 
-    it('skal IKKE akseptere kompetanseId (gammelt felt)', async () => {
+    it('skal IKKE akseptere kompetanseId eller talentId (gamle felter)', async () => {
       const mockBemanning = {
         id: 1,
         produksjon_id: 1,
         person_id: 1,
-        talent_id: 1,
+        talent_navn: 'FOH Lyd',
+        talent_kategori_sti: 'Lyd',
         status: 'planlagt'
       };
 
@@ -153,20 +157,25 @@ describe('Produksjon API - Bemanning Endpoints', () => {
         .send({
           personId: 1,
           kompetanseId: 1, // Gammelt felt - skal ignoreres
-          talentId: 1,
+          talentId: 1, // Gammelt felt - skal ignoreres
+          talentNavn: 'FOH Lyd',
+          talentKategoriSti: 'Lyd',
           status: 'planlagt'
         })
         .expect(201);
 
-      // Verifiser at kompetanseId IKKE sendes til service
+      // Verifiser at talentNavn og talentKategoriSti ER til stede
       expect(bemanningService.addBemanning).toHaveBeenCalledWith(
         expect.objectContaining({
-          talentId: 1
+          talentNavn: 'FOH Lyd',
+          talentKategoriSti: 'Lyd'
         })
       );
+      // Verifiser at kompetanseId og talentId IKKE sendes til service
       expect(bemanningService.addBemanning).toHaveBeenCalledWith(
         expect.not.objectContaining({
-          kompetanseId: expect.anything()
+          kompetanseId: expect.anything(),
+          talentId: expect.anything()
         })
       );
     });

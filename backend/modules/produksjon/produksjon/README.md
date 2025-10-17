@@ -26,7 +26,7 @@ produksjon/
 - `produksjon` - Individuelle produksjoner med navn, tid, beskrivelse, plassering
 
 ## Opprettelsesflyt og talent-mal
-Ved opprettelse kan request inneholde `kategoriId` og `applyTalentMal=true`. Backend kopierer kun data: henter talent-malen og (om ikke oppgitt) kategoriens `plassering` for å preutfylle produksjonen. Det lagres INGEN fremmednøkkel til kategori på `produksjon` (decoupled modell).
+Ved opprettelse kan request inneholde `kategoriId` og `applyKategoriMal=true`. Backend kopierer data: henter komplett mal (plan, talenter, oppmøtetider) og (om ikke oppgitt) kategoriens `plassering` for å preutfylle produksjonen. Det lagres INGEN fremmednøkkel til kategori på `produksjon` (decoupled modell).
 
 ## Eksempel
 
@@ -42,7 +42,7 @@ curl -X POST http://localhost:5001/api/produksjon \
     "publisert": false,
     "beskrivelse": "Årets store sommershow",
     "planId": 1,
-    "applyTalentMal": true
+    "applyKategoriMal": true
   }'
 ```
 

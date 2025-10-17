@@ -38,6 +38,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { produksjonAPI, Produksjon } from '../services/api';
+import NyProduksjonDialog from '../components/production/NyProduksjonDialog';
 
 type PublisertFilter = 'alle' | 'publisert' | 'upublisert';
 
@@ -52,6 +53,7 @@ const Dashboard: React.FC = () => {
   const [isFiltering, setIsFiltering] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [publisertFilter, setPublisertFilter] = useState<PublisertFilter>('alle');
+  const [nyProduksjonOpen, setNyProduksjonOpen] = useState(false);
 
   useEffect(() => {
     const fetchProduksjoner = async () => {
@@ -104,6 +106,29 @@ const Dashboard: React.FC = () => {
   const handleLogout = async () => {
     await logout();
     navigate('/login');
+  };
+
+  const handleNyProduksjonSuccess = () => {
+    // Refetch produksjoner etter vellykket opprettelse
+    setInitialLoading(false); // Unngå full loader
+    const fetchProduksjoner = async () => {
+      try {
+        setError(null);
+        const filterParams: any = { kommende: true };
+        if (publisertFilter === 'publisert') {
+          filterParams.publisert = true;
+        } else if (publisertFilter === 'upublisert') {
+          filterParams.publisert = false;
+        }
+        
+        const kommendeData = await produksjonAPI.getAll(filterParams);
+        setKommendeProduksjoner(kommendeData.produksjoner);
+      } catch (err: any) {
+        console.error('Feil ved henting av produksjoner:', err);
+        setError('Kunne ikke laste produksjoner. Vennligst prøv igjen.');
+      }
+    };
+    fetchProduksjoner();
   };
 
   const formatDato = (tidString: string) => {
@@ -213,6 +238,7 @@ const Dashboard: React.FC = () => {
                 <Button
                   variant="contained"
                   startIcon={<Add />}
+                  onClick={() => setNyProduksjonOpen(true)}
                   sx={{
                     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                     '&:hover': {
@@ -404,6 +430,13 @@ const Dashboard: React.FC = () => {
           </Paper>
         )}
       </Container>
+
+      {/* Ny Produksjon Dialog */}
+      <NyProduksjonDialog
+        open={nyProduksjonOpen}
+        onClose={() => setNyProduksjonOpen(false)}
+        onSuccess={handleNyProduksjonSuccess}
+      />
     </Box>
   );
 };

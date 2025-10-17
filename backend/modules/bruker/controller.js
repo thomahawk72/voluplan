@@ -171,6 +171,28 @@ const list = async (req, res) => {
 };
 
 /**
+ * GET /api/users/with-talents
+ * Hent brukere med deres talenter (for bemanning)
+ * Query params: talentId (optional) - filtrer på spesifikt talent
+ */
+const listWithTalents = async (req, res) => {
+  try {
+    const { talentId } = req.query;
+    const filters = {};
+    
+    if (talentId) {
+      filters.talentId = parseInt(talentId, 10);
+    }
+    
+    const users = await service.findAllWithTalents(filters);
+    res.json({ users });
+  } catch (error) {
+    console.error('[BRUKER] List users with talents error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/**
  * GET /api/users/:id
  * Hent bruker med ID
  */
@@ -504,6 +526,7 @@ module.exports = {
   forgotPassword,
   resetPassword,
   list,
+  listWithTalents,
   get,
   create,
   update,

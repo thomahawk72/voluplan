@@ -2,9 +2,11 @@ const request = require('supertest');
 const express = require('express');
 const routes = require('../routes');
 const bemanningService = require('../bemanning/service');
+const produksjonService = require('../produksjon/service');
 
 // Mock bemanning service
 jest.mock('../bemanning/service');
+jest.mock('../produksjon/service');
 
 // Mock auth middleware
 jest.mock('../../../shared/middleware/auth', () => ({
@@ -55,13 +57,25 @@ describe('Produksjon API - Bemanning Endpoints', () => {
         }
       ];
 
+      const mockTalentBehov = [
+        {
+          id: 1,
+          produksjon_id: 1,
+          talent_id: 1,
+          talent_navn: 'FOH Lyd',
+          talent_kategori: 'Lyd',
+          antall: 2,
+        }
+      ];
+
       bemanningService.findBemanningByProduksjonId.mockResolvedValue(mockBemanning);
+      produksjonService.findTalentBehovByProduksjonId.mockResolvedValue(mockTalentBehov);
 
       const response = await request(app)
         .get('/api/produksjon/1/bemanning')
         .expect(200);
 
-      expect(response.body).toEqual({ bemanning: mockBemanning });
+      expect(response.body).toEqual({ bemanning: mockBemanning, talentBehov: mockTalentBehov });
       expect(response.body.bemanning[0]).toHaveProperty('talent_navn');
       expect(response.body.bemanning[0]).toHaveProperty('talent_kategori');
       expect(response.body.bemanning[0]).not.toHaveProperty('kompetanse_navn');
@@ -70,12 +84,13 @@ describe('Produksjon API - Bemanning Endpoints', () => {
 
     it('skal returnere tomt array hvis ingen bemanning', async () => {
       bemanningService.findBemanningByProduksjonId.mockResolvedValue([]);
+      produksjonService.findTalentBehovByProduksjonId.mockResolvedValue([]);
 
       const response = await request(app)
         .get('/api/produksjon/1/bemanning')
         .expect(200);
 
-      expect(response.body).toEqual({ bemanning: [] });
+      expect(response.body).toEqual({ bemanning: [], talentBehov: [] });
     });
 
     it('skal returnere 500 ved database-feil', async () => {

@@ -1,12 +1,28 @@
 import { useState, useEffect } from 'react';
 import { produksjonAPI, Produksjon, Bemanning, ProduksjonsPlan } from '../services/api';
 
+export interface TalentBehov {
+  id: number;
+  produksjon_id: number;
+  talent_id: number;
+  talent_navn: string;
+  talent_kategori: string;
+  antall: number;
+  beskrivelse?: string;
+}
+
 export const useProductionData = (id: string | undefined) => {
   const [produksjon, setProduksjon] = useState<Produksjon | null>(null);
   const [bemanning, setBemanning] = useState<Bemanning[]>([]);
+  const [talentBehov, setTalentBehov] = useState<TalentBehov[]>([]);
   const [plan, setPlan] = useState<ProduksjonsPlan | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const refresh = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -21,6 +37,7 @@ export const useProductionData = (id: string | undefined) => {
         
         const bemanningData = await produksjonAPI.getBemanning(parseInt(id));
         setBemanning(bemanningData.bemanning);
+        setTalentBehov(bemanningData.talentBehov || []);
         
         if (prodData.produksjon.plan_id) {
           try {
@@ -39,7 +56,7 @@ export const useProductionData = (id: string | undefined) => {
     };
 
     fetchData();
-  }, [id]);
+  }, [id, refreshTrigger]);
 
   // Beregn statistikk
   const bemanningStats = {
@@ -63,11 +80,13 @@ export const useProductionData = (id: string | undefined) => {
   return {
     produksjon,
     bemanning,
+    talentBehov,
     plan,
     loading,
     error,
     bemanningStats,
     bemanningPerKategori,
+    refresh,
   };
 };
 

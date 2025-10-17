@@ -75,10 +75,10 @@ const findById = async (id) => {
 
 /**
  * Opprett ny produksjon
- * Hvis applyTalentMal=true og kategoriId er satt, populeres bemanning fra talent-mal
+ * Hvis applyKategoriMal=true og kategoriId er satt, kopieres plan, talenter og oppmøtetider fra malen
  */
 const create = async (data) => {
-  const { navn, tid, kategoriId, publisert, beskrivelse, planId, applyTalentMal, plassering } = data;
+  const { navn, tid, kategoriId, publisert, beskrivelse, planId, applyKategoriMal, plassering } = data;
   
   // Finn standard plassering fra kategori dersom ikke eksplisitt oppgitt
   let plasseringValue = plassering || null;
@@ -95,15 +95,82 @@ const create = async (data) => {
   
   const produksjon = result.rows[0];
   
-  // Hvis applyTalentMal er true og kategori er satt, populer bemanning fra mal
-  // NB: Dette oppretter bare "slots" uten å tildele personer - personer må tildeles manuelt senere
-  if (applyTalentMal && kategoriId) {
-    const talentMal = await kategoriService.findTalentMalByKategoriId(kategoriId);
-    // Returnerer produksjon med info om at mal er anvendt
-    // Frontend må håndtere selve bemanningen separat hvis ønskelig
+  // Hvis applyKategoriMal er true og kategori er satt, kopier data fra malen
+  if (applyKategoriMal && kategoriId) {
+    await applyKategoriMalToProduksjon(produksjon.id, kategoriId, new Date(tid));
   }
   
   return produksjon;
+};
+
+/**
+ * Hjelpefunksjon: Kopier kategori-mal til produksjon
+ * Kopierer plan-elementer, talenter (slots) og oppmøtetider
+ */
+const applyKategoriMalToProduksjon = async (produksjonId, kategoriId, produksjonTid) => {
+  // Hent alle maler fra kategorien
+  const [planMal, talentMal, oppmoteMal] = await Promise.all([
+    kategoriService.findPlanMalByKategoriId(kategoriId),
+    kategoriService.findTalentMalByKategoriId(kategoriId),
+    kategoriService.findOppmoteMalByKategoriId(kategoriId),
+  ]);
+  
+  // Kopier plan-elementer (overskrifter først, så hendelser)
+  if (planMal && planMal.length > 0) {
+    const parentIdMap = {}; // Map old parent_id to new parent_id
+    
+    // Først kopier overskrifter
+    for (const element of planMal.filter(e => e.type === 'overskrift')) {
+      const insertResult = await db.query(
+        `INSERT INTO produksjon_plan_element 
+          (produksjon_id, type, navn, varighet_minutter, parent_id, rekkefølge) 
+        VALUES ($1, $2, $3, $4, $5, $6) 
+        RETURNING id`,
+        [produksjonId, element.type, element.navn, element.varighet_minutter, null, element.rekkefølge]
+      );
+      parentIdMap[element.id] = insertResult.rows[0].id;
+    }
+    
+    // Deretter kopier hendelser med riktige parent_id
+    for (const element of planMal.filter(e => e.type === 'hendelse')) {
+      const newParentId = parentIdMap[element.parent_id];
+      if (newParentId) {
+        await db.query(
+          `INSERT INTO produksjon_plan_element 
+            (produksjon_id, type, navn, varighet_minutter, parent_id, rekkefølge) 
+          VALUES ($1, $2, $3, $4, $5, $6)`,
+          [produksjonId, element.type, element.navn, element.varighet_minutter, newParentId, element.rekkefølge]
+        );
+      }
+    }
+  }
+  
+  // Kopier talent-behov (antall av hvert talent som trengs)
+  if (talentMal && talentMal.length > 0) {
+    for (const talent of talentMal) {
+      await db.query(
+        `INSERT INTO produksjon_talent_behov 
+          (produksjon_id, talent_id, antall, beskrivelse) 
+        VALUES ($1, $2, $3, $4)`,
+        [produksjonId, talent.talent_id, talent.antall, talent.beskrivelse]
+      );
+    }
+  }
+  
+  // Kopier oppmøtetider med beregnet tidspunkt
+  if (oppmoteMal && oppmoteMal.length > 0) {
+    for (const oppmote of oppmoteMal) {
+      // Beregn faktisk oppmøtetidspunkt basert på produksjonTid og minutter_før_start
+      const oppmoteTidspunkt = new Date(produksjonTid.getTime() - (oppmote.minutter_før_start * 60 * 1000));
+      
+      await db.query(
+        `INSERT INTO produksjon_oppmote 
+          (produksjon_id, navn, beskrivelse, tidspunkt, rekkefølge) 
+        VALUES ($1, $2, $3, $4, $5)`,
+        [produksjonId, oppmote.navn, oppmote.beskrivelse, oppmoteTidspunkt, oppmote.rekkefølge]
+      );
+    }
+  }
 };
 
 /**
@@ -191,6 +258,40 @@ const findByUserId = async (userId) => {
   return result.rows;
 };
 
+/**
+ * Finn talent-behov for en produksjon
+ */
+const findTalentBehovByProduksjonId = async (produksjonId) => {
+  const result = await db.query(
+    `SELECT 
+      ptb.*,
+      t.navn as talent_navn,
+      COALESCE(
+        CASE 
+          WHEN tk3.parent_id IS NOT NULL AND tk2.parent_id IS NOT NULL THEN 
+            tk1.navn || ' → ' || tk2.navn || ' → ' || tk3.navn
+          WHEN tk3.parent_id IS NOT NULL THEN 
+            tk2.navn || ' → ' || tk3.navn
+          ELSE tk3.navn
+        END, 
+        tk3.navn
+      ) as talent_kategori
+    FROM produksjon_talent_behov ptb
+    JOIN talent t ON ptb.talent_id = t.id
+    LEFT JOIN talentkategori tk3 ON t.kategori_id = tk3.id
+    LEFT JOIN talentkategori tk2 ON tk3.parent_id = tk2.id
+    LEFT JOIN talentkategori tk1 ON tk2.parent_id = tk1.id
+    WHERE ptb.produksjon_id = $1
+    ORDER BY 
+      COALESCE(tk1.navn, tk2.navn, tk3.navn),
+      COALESCE(tk2.navn, tk3.navn),
+      tk3.navn,
+      t.navn`,
+    [produksjonId]
+  );
+  return result.rows;
+};
+
 module.exports = {
   findAll,
   findById,
@@ -198,5 +299,6 @@ module.exports = {
   update,
   remove,
   findByUserId,
+  findTalentBehovByProduksjonId,
 };
 

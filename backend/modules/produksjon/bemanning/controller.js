@@ -4,12 +4,16 @@
  */
 
 const service = require('./service');
+const produksjonService = require('../produksjon/service');
 
 const getBemanning = async (req, res) => {
   try {
     const { id } = req.params;
-    const bemanning = await service.findBemanningByProduksjonId(id);
-    res.json({ bemanning });
+    const [bemanning, talentBehov] = await Promise.all([
+      service.findBemanningByProduksjonId(id),
+      produksjonService.findTalentBehovByProduksjonId(id),
+    ]);
+    res.json({ bemanning, talentBehov });
   } catch (error) {
     console.error('[BEMANNING] Get bemanning error:', error);
     res.status(500).json({ error: 'Internal server error' });

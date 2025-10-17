@@ -26,17 +26,18 @@ const ProductionDetail: React.FC = () => {
   const {
     produksjon,
     bemanning,
+    talentBehov,
     plan,
     loading,
     error,
     bemanningStats,
     bemanningPerKategori,
+    refresh,
   } = useProductionData(id);
   
   const [visMedarbeidere, setVisMedarbeidere] = useState(false);
   const [visPlan, setVisPlan] = useState(false);
   const [visOppmote, setVisOppmote] = useState(false);
-  const [apneKategorier, setApneKategorier] = useState<Set<string>>(new Set());
 
   const formatDato = (tidString: string) => {
     const dato = new Date(tidString);
@@ -53,18 +54,6 @@ const ProductionDetail: React.FC = () => {
     return dato.toLocaleTimeString('nb-NO', {
       hour: '2-digit',
       minute: '2-digit',
-    });
-  };
-
-  const toggleKategori = (kategoriNavn: string) => {
-    setApneKategorier(prev => {
-      const nySet = new Set(prev);
-      if (nySet.has(kategoriNavn)) {
-        nySet.delete(kategoriNavn);
-      } else {
-        nySet.add(kategoriNavn);
-      }
-      return nySet;
     });
   };
 
@@ -139,10 +128,11 @@ const ProductionDetail: React.FC = () => {
 
         <EmployeeCard
           visible={visMedarbeidere}
+          produksjonId={parseInt(id || '0')}
           bemanningStats={bemanningStats}
           bemanningPerKategori={bemanningPerKategori}
-          apneKategorier={apneKategorier}
-          onToggleKategori={toggleKategori}
+          talentBehov={talentBehov}
+          onRefresh={refresh}
           getStatusColor={getStatusColor}
           getStatusLabel={getStatusLabel}
         />

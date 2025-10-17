@@ -138,6 +138,17 @@ router.get(
 );
 
 /**
+ * GET /api/users/with-talents
+ * Hent brukere med talents (for bemanning)
+ * Query params: ?talentId=123 for å filtrere på spesifikt talent
+ */
+router.get(
+  '/users/with-talents',
+  authenticateToken,
+  controller.listWithTalents
+);
+
+/**
  * GET /api/users/:id
  * Hent bruker med ID
  */

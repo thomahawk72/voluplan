@@ -41,7 +41,7 @@ const get = async (req, res) => {
 
 const create = async (req, res) => {
   try {
-  const { navn, tid, kategoriId, publisert, beskrivelse, planId, applyTalentMal, plassering } = req.body;
+  const { navn, tid, kategoriId, publisert, beskrivelse, planId, applyKategoriMal, plassering } = req.body;
     const produksjon = await service.create({
       navn,
       tid,
@@ -49,14 +49,13 @@ const create = async (req, res) => {
       publisert,
       beskrivelse,
       planId,
-      applyTalentMal,
+      applyKategoriMal,
       plassering,
     });
     
-    // Hvis talent-mal skal anvendes, hent malen og returner den sammen med produksjonen
-    if (applyTalentMal && kategoriId) {
-      const talentMal = await kategoriService.findTalentMalByKategoriId(kategoriId);
-      return res.status(201).json({ produksjon, talentMal });
+    // Hvis kategori-mal skal anvendes, returner produksjonen
+    if (applyKategoriMal && kategoriId) {
+      return res.status(201).json({ produksjon });
     }
     
     res.status(201).json({ produksjon });

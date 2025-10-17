@@ -258,6 +258,127 @@ const removePlanMalElement = async (req, res) => {
   }
 };
 
+// ============================================================================
+// KATEGORI OPPMØTE-MAL
+// ============================================================================
+
+const getOppmoteMal = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const oppmoteMal = await service.findOppmoteMalByKategoriId(id);
+    res.json({ oppmoteMal });
+  } catch (error) {
+    console.error('[KATEGORI] Get oppmøte-mal error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+const addOppmoteToMal = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { navn, beskrivelse, minutterFørStart, rekkefølge } = req.body;
+    
+    const oppmote = await service.addOppmoteToKategoriMal({
+      kategoriId: id,
+      navn,
+      beskrivelse,
+      minutterFørStart,
+      rekkefølge,
+    });
+    
+    res.status(201).json({ oppmote });
+  } catch (error) {
+    console.error('[KATEGORI] Add oppmøte to mal error:', error);
+    if (error.code === '23514') {
+      return res.status(400).json({ error: 'Ugyldig oppmøtetid. Minutter før start må være >= 0.' });
+    }
+    if (error.code === '23503') {
+      return res.status(400).json({ error: 'Ugyldig kategori' });
+    }
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+const updateOppmoteInMal = async (req, res) => {
+  try {
+    const { oppmoteId } = req.params;
+    const { navn, beskrivelse, minutterFørStart, rekkefølge } = req.body;
+    
+    const oppmote = await service.updateOppmoteInKategoriMal(oppmoteId, {
+      navn,
+      beskrivelse,
+      minutterFørStart,
+      rekkefølge,
+    });
+    
+    if (!oppmote) {
+      return res.status(404).json({ error: 'Oppmøtetid not found' });
+    }
+    
+    res.json({ oppmote });
+  } catch (error) {
+    console.error('[KATEGORI] Update oppmøte in mal error:', error);
+    if (error.code === '23514') {
+      return res.status(400).json({ error: 'Ugyldig oppmøtetid. Minutter før start må være >= 0.' });
+    }
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+const updateOppmoteRekkefølge = async (req, res) => {
+  try {
+    const { oppmoteId } = req.params;
+    const { rekkefølge } = req.body;
+    
+    const oppmote = await service.updateOppmoteRekkefølge(oppmoteId, rekkefølge);
+    
+    if (!oppmote) {
+      return res.status(404).json({ error: 'Oppmøtetid not found' });
+    }
+    
+    res.json({ oppmote });
+  } catch (error) {
+    console.error('[KATEGORI] Update oppmøte rekkefølge error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+const removeOppmoteFromMal = async (req, res) => {
+  try {
+    const { oppmoteId } = req.params;
+    const deleted = await service.removeOppmoteFromKategoriMal(oppmoteId);
+    
+    if (!deleted) {
+      return res.status(404).json({ error: 'Oppmøtetid not found' });
+    }
+    
+    res.json({ message: 'Oppmøtetid deleted successfully' });
+  } catch (error) {
+    console.error('[KATEGORI] Remove oppmøte from mal error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// ============================================================================
+// KOMPLETT KATEGORI-MAL
+// ============================================================================
+
+const getKomplettMal = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const komplettMal = await service.findKomplettMalByKategoriId(id);
+    
+    if (!komplettMal) {
+      return res.status(404).json({ error: 'Kategori not found' });
+    }
+    
+    res.json(komplettMal);
+  } catch (error) {
+    console.error('[KATEGORI] Get komplett mal error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 module.exports = {
   // Kategorier
   listKategorier,
@@ -278,5 +399,15 @@ module.exports = {
   updatePlanMalElement,
   updatePlanMalRekkefølge,
   removePlanMalElement,
+  
+  // Kategori oppmøte-mal
+  getOppmoteMal,
+  addOppmoteToMal,
+  updateOppmoteInMal,
+  updateOppmoteRekkefølge,
+  removeOppmoteFromMal,
+  
+  // Komplett kategori-mal
+  getKomplettMal,
 };
 

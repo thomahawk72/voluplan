@@ -341,6 +341,69 @@ const hasUserTalent = async (userId, talentId) => {
   return result.rows.length > 0;
 };
 
+/**
+ * Hent alle brukere med deres talenter (for bemanning)
+ * Kan filtreres på spesifikt talent
+ */
+const findAllWithTalents = async (filters = {}) => {
+  const { talentId } = filters;
+
+  let query = `
+    SELECT
+      u.id,
+      u.first_name,
+      u.last_name,
+      u.email,
+      u.phone_number,
+      u.is_active,
+      json_agg(
+        json_build_object(
+          'talent_id', bt.talent_id,
+          'talent_navn', t.navn,
+          'talent_kategori', COALESCE(
+            CASE 
+              WHEN tk3.parent_id IS NOT NULL AND tk2.parent_id IS NOT NULL THEN 
+                tk1.navn || ' → ' || tk2.navn || ' → ' || tk3.navn
+              WHEN tk3.parent_id IS NOT NULL THEN 
+                tk2.navn || ' → ' || tk3.navn
+              ELSE tk3.navn
+            END, 
+            tk3.navn
+          ),
+          'erfaringsnivaa', bt.erfaringsnivaa,
+          'sertifisert', bt.sertifisert
+        ) ORDER BY t.navn
+      ) FILTER (WHERE bt.talent_id IS NOT NULL) as talents
+    FROM users u
+    LEFT JOIN bruker_talent bt ON u.id = bt.bruker_id
+    LEFT JOIN talent t ON bt.talent_id = t.id
+    LEFT JOIN talentkategori tk3 ON t.kategori_id = tk3.id
+    LEFT JOIN talentkategori tk2 ON tk3.parent_id = tk2.id
+    LEFT JOIN talentkategori tk1 ON tk2.parent_id = tk1.id
+    WHERE u.is_active = true
+  `;
+
+  const params = [];
+  
+  // Filtrer på spesifikt talent hvis oppgitt
+  if (talentId) {
+    query += ` AND u.id IN (
+      SELECT bruker_id FROM bruker_talent WHERE talent_id = $1
+    )`;
+    params.push(talentId);
+  }
+
+  query += `
+    GROUP BY u.id, u.first_name, u.last_name, u.email, u.phone_number, u.is_active
+    ORDER BY u.last_name, u.first_name
+  `;
+
+  const result = await db.query(query, params);
+  
+  // Filtrer bort brukere uten talenter (hvis ingen talenter etter filter)
+  return result.rows.filter(user => user.talents && user.talents.length > 0);
+};
+
 module.exports = {
   findByEmail,
   findById,
@@ -362,6 +425,7 @@ module.exports = {
   updateUserTalent,
   removeUserTalent,
   hasUserTalent,
+  findAllWithTalents,
 };
 
 

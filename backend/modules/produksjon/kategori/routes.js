@@ -101,5 +101,43 @@ router.patch('/:id/plan-mal/:elementId/rekkefølge', authenticateToken, requireR
 // Fjern element fra plan-mal
 router.delete('/:id/plan-mal/:elementId', authenticateToken, requireRole(['admin']), controller.removePlanMalElement);
 
+// ============================================================================
+// KATEGORI OPPMØTE-MAL
+// ============================================================================
+
+// Hent oppmøte-mal for kategori
+router.get('/:id/oppmote-mal', authenticateToken, controller.getOppmoteMal);
+
+// Legg til oppmøtetid i mal
+router.post('/:id/oppmote-mal', authenticateToken, requireRole(['admin']), [
+  body('navn').trim().notEmpty(),
+  body('beskrivelse').optional().trim(),
+  body('minutterFørStart').optional().isInt({ min: 0 }),
+  body('rekkefølge').optional().isInt({ min: 0 }),
+], validate, controller.addOppmoteToMal);
+
+// Oppdater oppmøtetid i mal
+router.put('/:id/oppmote-mal/:oppmoteId', authenticateToken, requireRole(['admin']), [
+  body('navn').optional().trim().notEmpty(),
+  body('beskrivelse').optional().trim(),
+  body('minutterFørStart').optional().isInt({ min: 0 }),
+  body('rekkefølge').optional().isInt({ min: 0 }),
+], validate, controller.updateOppmoteInMal);
+
+// Oppdater kun rekkefølge på oppmøtetid
+router.patch('/:id/oppmote-mal/:oppmoteId/rekkefølge', authenticateToken, requireRole(['admin']), [
+  body('rekkefølge').isInt({ min: 0 }),
+], validate, controller.updateOppmoteRekkefølge);
+
+// Fjern oppmøtetid fra mal
+router.delete('/:id/oppmote-mal/:oppmoteId', authenticateToken, requireRole(['admin']), controller.removeOppmoteFromMal);
+
+// ============================================================================
+// KOMPLETT KATEGORI-MAL
+// ============================================================================
+
+// Hent komplett mal for kategori (talent, plan, oppmøte)
+router.get('/:id/komplett-mal', authenticateToken, controller.getKomplettMal);
+
 module.exports = router;
 

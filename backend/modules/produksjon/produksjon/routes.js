@@ -39,7 +39,7 @@ router.post('/', authenticateToken, requireRole(['admin']), [
   body('beskrivelse').optional().trim(),
   body('planId').optional().isInt(),
   body('plassering').optional().trim(),
-  body('applyTalentMal').optional().isBoolean(),
+  body('applyKategoriMal').optional().isBoolean(),
 ], validate, controller.create);
 
 // Oppdater produksjon

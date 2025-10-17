@@ -3,8 +3,8 @@
 ## Oversikt
 Voluplan bruker PostgreSQL som database for å håndtere brukere, talenter (3-nivå hierarki), produksjoner og bemanningsplanlegging.
 
-**Siste oppdatering:** 2025-10-11  
-**Versjon:** 007 (3-nivå talent hierarki + bruker-talent relasjon)
+**Siste oppdatering:** 2025-10-17  
+**Versjon:** 016 (Produksjon talent-behov - kopieres fra kategori-mal)
 
 ## Database Tabeller
 
@@ -315,8 +315,46 @@ ORDER BY COALESCE(parent_id, id), parent_id NULLS FIRST, rekkefølge, id;
 
 ---
 
+### 5d. `produksjonskategori_oppmote_mal` - Oppmøtetider-mal for produksjonskategorier
+Definerer standard oppmøtetider for hver produksjonskategori. Når en ny produksjon opprettes basert på kategorien, kopieres disse med beregnet faktisk tid.
+
+**Kolonner:**
+- `id` (SERIAL PRIMARY KEY)
+- `kategori_id` (INTEGER NOT NULL) - Referanse til `produksjonskategori.id`
+- `navn` (VARCHAR(200) NOT NULL) - Beskrivende navn (f.eks. "Teknisk crew", "Skuespillere")
+- `beskrivelse` (TEXT) - Valgfri beskrivelse av hva som skal gjøres ved oppmøte
+- `minutter_før_start` (INTEGER NOT NULL DEFAULT 0) - Minutter før produksjonsstart (0 = samme tid som produksjonsstart)
+- `rekkefølge` (INTEGER NOT NULL DEFAULT 0) - Sorteringsrekkefølge
+- `created_at` (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+- `updated_at` (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+
+**Constraints:**
+- CHECK (`minutter_før_start` >= 0)
+
+**Relasjoner:**
+- `kategori_id` → `produksjonskategori.id` (ON DELETE CASCADE)
+
+**Indekser:**
+- Primærnøkkel på `id`
+- Indeks på `kategori_id`
+- Kombinert indeks på (`kategori_id`, `rekkefølge`)
+
+**Eksempel:**
+```
+Teknisk crew: 120 minutter før start (2 timer før)
+Skuespillere: 60 minutter før start (1 time før)
+Vertskap: 30 minutter før start
+```
+
+---
+
 ### 6. `produksjonsplan` - Overordnede planer
-Når en ny produksjon opprettes med `applyTalentMal=true`, kan systemet hente talent-malen for den valgte produksjonskategorien og foreslå denne som utgangspunkt for bemanning.
+Grupperer flere produksjoner under en felles plan (f.eks. "Vårsesongen 2025").
+
+---
+
+### 7. `produksjon` - Individuelle produksjoner/arrangementer
+Sentral tabell for produksjoner. Når en produksjon opprettes med `applyKategoriMal=true`, kopieres plan, talenter og oppmøtetider fra kategorien.
 
 **Eksempel:**
 For kategori "Teaterforestilling":
@@ -377,6 +415,120 @@ Representerer konkrete arrangementer/forestillinger.
 For drift sørger migrasjon 012 for at følgende tabeller og indekser finnes på miljøet:
 - `talentkategori`, `talent`, `bruker_talent`
 - Indekser på `kategori_id`, `leder_id`, `parent_id`, `navn`, `bruker_id`, `talent_id`, `erfaringsnivaa`
+
+---
+
+### 7c. `produksjon_plan_element` - Plan-elementer for individuelle produksjoner (Migrasjon 015)
+Kopieres fra `produksjonskategori_plan_mal_element` når produksjon opprettes med `applyKategoriMal=true`. Støtter hierarkisk struktur med overskrifter og hendelser.
+
+**Kolonner:**
+- `id` (SERIAL PRIMARY KEY)
+- `produksjon_id` (INTEGER NOT NULL) - Referanse til `produksjon.id`
+- `type` (VARCHAR(20) NOT NULL) - 'overskrift' eller 'hendelse'
+- `navn` (VARCHAR(200) NOT NULL) - Navn på overskrift/hendelse
+- `varighet_minutter` (INTEGER) - Varighet i minutter (NULL for overskrifter, påkrevd for hendelser)
+- `parent_id` (INTEGER) - Referanse til overordnet overskrift (NULL for overskrifter, påkrevd for hendelser)
+- `rekkefølge` (INTEGER NOT NULL DEFAULT 0) - Sorteringsrekkefølge
+- `created_at` (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+- `updated_at` (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+
+**Constraints:**
+- CHECK (`type` IN ('overskrift', 'hendelse'))
+- CHECK (`varighet_minutter` IS NULL OR `varighet_minutter` >= 0)
+- CHECK Overskrift-struktur (samme som kategori plan-mal)
+
+**Relasjoner:**
+- `produksjon_id` → `produksjon.id` (ON DELETE CASCADE)
+- `parent_id` → `produksjon_plan_element.id` (ON DELETE CASCADE)
+
+**Indekser:**
+- Primærnøkkel på `id`
+- Indeks på `produksjon_id`
+- Indeks på `parent_id`
+- Kombinert indeks på (`produksjon_id`, `parent_id`, `rekkefølge`)
+
+**Hvordan data kopieres:**
+Når en produksjon opprettes basert på en kategori, kopieres plan-mal element for element. Hierarkisk struktur bevares ved å mappe gamle parent_id'er til nye.
+
+---
+
+### 7d. `produksjon_oppmote` - Oppmøtetider for individuelle produksjoner (Migrasjon 015)
+Kopieres fra `produksjonskategori_oppmote_mal` når produksjon opprettes med `applyKategoriMal=true`. Tidspunkt beregnes basert på produksjonens starttid.
+
+**Kolonner:**
+- `id` (SERIAL PRIMARY KEY)
+- `produksjon_id` (INTEGER NOT NULL) - Referanse til `produksjon.id`
+- `navn` (VARCHAR(200) NOT NULL) - Beskrivende navn (f.eks. "Teknisk crew")
+- `beskrivelse` (TEXT) - Valgfri beskrivelse
+- `tidspunkt` (TIMESTAMP NOT NULL) - Faktisk oppmøtetid (beregnet fra produksjon.tid minus minutter_før_start)
+- `rekkefølge` (INTEGER NOT NULL DEFAULT 0) - Sorteringsrekkefølge
+- `created_at` (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+- `updated_at` (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+
+**Relasjoner:**
+- `produksjon_id` → `produksjon.id` (ON DELETE CASCADE)
+
+**Indekser:**
+- Primærnøkkel på `id`
+- Indeks på `produksjon_id`
+- Indeks på `tidspunkt`
+- Kombinert indeks på (`produksjon_id`, `rekkefølge`)
+
+**Hvordan data kopieres:**
+```typescript
+// Eksempel: Produksjon starter kl 19:00
+// Oppmøte-mal sier "Teknisk crew: 120 minutter før start"
+// Resulterende tidspunkt: 17:00 (19:00 - 2 timer)
+const oppmoteTidspunkt = new Date(produksjonTid.getTime() - (minutter_før_start * 60 * 1000));
+```
+
+---
+
+### 7e. `produksjon_talent_behov` - Talent-behov for individuelle produksjoner (Migrasjon 016)
+Kopieres fra `produksjonskategori_talent_mal` når produksjon opprettes med `applyKategoriMal=true`. Definerer hvor mange av hvert talent som trengs for denne spesifikke produksjonen.
+
+**Kolonner:**
+- `id` (SERIAL PRIMARY KEY)
+- `produksjon_id` (INTEGER NOT NULL) - Referanse til `produksjon.id`
+- `talent_id` (INTEGER NOT NULL) - Referanse til `talent.id`
+- `antall` (INTEGER NOT NULL DEFAULT 1) - Hvor mange personer med dette talentet som trengs
+- `beskrivelse` (TEXT) - Valgfri beskrivelse av rollen/behovet
+- `created_at` (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+- `updated_at` (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+
+**Constraints:**
+- `UNIQUE (produksjon_id, talent_id)` - Ett talent-behov per talent per produksjon
+- `CHECK (antall > 0)` - Antall må være positivt
+
+**Relasjoner:**
+- `produksjon_id` → `produksjon.id` (ON DELETE CASCADE)
+- `talent_id` → `talent.id` (ON DELETE CASCADE)
+
+**Indekser:**
+- Primærnøkkel på `id`
+- Indeks på `produksjon_id`
+- Indeks på `talent_id`
+
+**Bruk i API:**
+```javascript
+// Hentes sammen med bemanning for å vise status
+GET /api/produksjon/:id/bemanning
+Response: {
+  bemanning: [...],        // Faktisk tildelte personer
+  talentBehov: [           // Behov definert i kategori-mal
+    { 
+      talent_id: 1, 
+      talent_navn: "FOH Lyd",
+      antall: 2,
+      // Frontend viser: "FOH Lyd: 1/2" (1 tildelt av 2 nødvendige)
+    }
+  ]
+}
+```
+
+**Forskjell fra `produksjon_bemanning`:**
+- `produksjon_talent_behov`: Hvor mange trengs (fra kategori-mal)
+- `produksjon_bemanning`: Hvem er faktisk tildelt
 
 ---
 

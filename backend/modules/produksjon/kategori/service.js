@@ -301,6 +301,136 @@ const removePlanMalElement = async (id) => {
   return result.rows[0] || null;
 };
 
+// ============================================================================
+// KATEGORI OPPMØTE-MAL
+// ============================================================================
+
+/**
+ * Hent oppmøte-mal for en produksjonskategori
+ */
+const findOppmoteMalByKategoriId = async (kategoriId) => {
+  const result = await db.query(
+    `SELECT 
+      id,
+      kategori_id,
+      navn,
+      beskrivelse,
+      minutter_før_start,
+      rekkefølge
+    FROM produksjonskategori_oppmote_mal
+    WHERE kategori_id = $1
+    ORDER BY rekkefølge, id`,
+    [kategoriId]
+  );
+  return result.rows;
+};
+
+/**
+ * Legg til oppmøtetid i kategori-mal
+ */
+const addOppmoteToKategoriMal = async (data) => {
+  const { kategoriId, navn, beskrivelse, minutterFørStart, rekkefølge } = data;
+  const result = await db.query(
+    `INSERT INTO produksjonskategori_oppmote_mal 
+      (kategori_id, navn, beskrivelse, minutter_før_start, rekkefølge) 
+    VALUES ($1, $2, $3, $4, $5) 
+    RETURNING *`,
+    [kategoriId, navn, beskrivelse || null, minutterFørStart || 0, rekkefølge || 0]
+  );
+  return result.rows[0];
+};
+
+/**
+ * Oppdater oppmøtetid i kategori-mal
+ */
+const updateOppmoteInKategoriMal = async (id, data) => {
+  const { navn, beskrivelse, minutterFørStart, rekkefølge } = data;
+  
+  const updateFields = [];
+  const values = [];
+  let paramCount = 1;
+  
+  if (navn !== undefined) {
+    updateFields.push(`navn = $${paramCount++}`);
+    values.push(navn);
+  }
+  if (beskrivelse !== undefined) {
+    updateFields.push(`beskrivelse = $${paramCount++}`);
+    values.push(beskrivelse);
+  }
+  if (minutterFørStart !== undefined) {
+    updateFields.push(`minutter_før_start = $${paramCount++}`);
+    values.push(minutterFørStart);
+  }
+  if (rekkefølge !== undefined) {
+    updateFields.push(`rekkefølge = $${paramCount++}`);
+    values.push(rekkefølge);
+  }
+  
+  if (updateFields.length === 0) {
+    return null;
+  }
+  
+  updateFields.push(`updated_at = CURRENT_TIMESTAMP`);
+  values.push(id);
+  
+  const query = `UPDATE produksjonskategori_oppmote_mal SET ${updateFields.join(', ')} WHERE id = $${paramCount} RETURNING *`;
+  const result = await db.query(query, values);
+  return result.rows[0] || null;
+};
+
+/**
+ * Oppdater kun rekkefølge på oppmøtetid
+ */
+const updateOppmoteRekkefølge = async (id, rekkefølge) => {
+  const result = await db.query(
+    'UPDATE produksjonskategori_oppmote_mal SET rekkefølge = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *',
+    [rekkefølge, id]
+  );
+  return result.rows[0] || null;
+};
+
+/**
+ * Fjern oppmøtetid fra kategori-mal
+ */
+const removeOppmoteFromKategoriMal = async (id) => {
+  const result = await db.query(
+    'DELETE FROM produksjonskategori_oppmote_mal WHERE id = $1 RETURNING id',
+    [id]
+  );
+  return result.rows[0] || null;
+};
+
+// ============================================================================
+// KOMPLETT KATEGORI-MAL
+// ============================================================================
+
+/**
+ * Hent komplett mal for en produksjonskategori (plan, talenter, oppmøtetider)
+ * Brukes når man skal opprette ny produksjon basert på kategori
+ */
+const findKomplettMalByKategoriId = async (kategoriId) => {
+  const kategori = await findKategoriById(kategoriId);
+  
+  if (!kategori) {
+    return null;
+  }
+  
+  // Hent alle maler parallelt
+  const [talentMal, planMal, oppmoteMal] = await Promise.all([
+    findTalentMalByKategoriId(kategoriId),
+    findPlanMalByKategoriId(kategoriId),
+    findOppmoteMalByKategoriId(kategoriId),
+  ]);
+  
+  return {
+    kategori,
+    talentMal,
+    planMal,
+    oppmoteMal,
+  };
+};
+
 module.exports = {
   // Kategorier
   findAllKategorier,
@@ -322,5 +452,15 @@ module.exports = {
   updatePlanMalElement,
   updatePlanMalRekkefølge,
   removePlanMalElement,
+  
+  // Kategori oppmøte-mal
+  findOppmoteMalByKategoriId,
+  addOppmoteToKategoriMal,
+  updateOppmoteInKategoriMal,
+  updateOppmoteRekkefølge,
+  removeOppmoteFromKategoriMal,
+  
+  // Komplett kategori-mal
+  findKomplettMalByKategoriId,
 };
 

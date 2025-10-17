@@ -83,6 +83,8 @@ POST   /api/auth/forgot-password    # Be om passordtilbakestilling
 POST   /api/auth/reset-password     # Tilbakestill passord
 
 GET    /api/users                   # Liste brukere
+GET    /api/users/with-talents      # Hent brukere med talents (for bemanning)
+                                     # Query: ?talentId=123 (filtrer på spesifikt talent)
 GET    /api/users/:id               # Hent bruker
 POST   /api/users                   # Opprett bruker
 PUT    /api/users/:id               # Oppdater bruker (inkl. e-post med sikkerhet)
@@ -238,6 +240,16 @@ PUT    /api/produksjon/kategorier/:id/plan-mal/:elementId           # Oppdater e
 PATCH  /api/produksjon/kategorier/:id/plan-mal/:elementId/rekkefølge # Oppdater rekkefølge
 DELETE /api/produksjon/kategorier/:id/plan-mal/:elementId           # Fjern element
 
+# Kategori Oppmøte-maler
+GET    /api/produksjon/kategorier/:id/oppmote-mal                   # Hent oppmøte-mal for kategori
+POST   /api/produksjon/kategorier/:id/oppmote-mal                   # Legg til oppmøtetid
+PUT    /api/produksjon/kategorier/:id/oppmote-mal/:oppmoteId        # Oppdater oppmøtetid
+PATCH  /api/produksjon/kategorier/:id/oppmote-mal/:oppmoteId/rekkefølge # Oppdater rekkefølge
+DELETE /api/produksjon/kategorier/:id/oppmote-mal/:oppmoteId        # Fjern oppmøtetid
+
+# Kategori Komplett Mal (alle maler i én request)
+GET    /api/produksjon/kategorier/:id/komplett-mal                  # Hent plan, talenter og oppmøtetider
+
 # Produksjoner
 GET    /api/produksjon                         # Liste produksjoner
 GET    /api/produksjon/:id                     # Hent produksjon
@@ -262,15 +274,26 @@ GET    /api/produksjon/bruker/:userId          # Produksjoner for bruker
 - `produksjonskategori`
 - `produksjonskategori_talent_mal` (Talent-maler per kategori)
 - `produksjonskategori_plan_mal_element` (Plan-maler per kategori - overskrifter og hendelser)
+- `produksjonskategori_oppmote_mal` (Oppmøtetider-maler per kategori)
 - `produksjon` (uten FK til produksjonskategori fra og med migrasjon 011)
+- `produksjon_plan_element` (Plan-elementer for spesifikk produksjon, kopieres fra mal)
+- `produksjon_oppmote` (Oppmøtetider for spesifikk produksjon, kopieres fra mal)
 - `produksjon_bemanning`
 
-**Opprettelsesflyt og talent-mal:**
-Produksjonskategorier kan ha en forhåndsdefinert mal av talenter med antall (f.eks. "Teaterforestilling" kan ha 2x Lydtekniker, 1x Piano, 2x Lysoperatør).
+**Opprettelsesflyt og kategori-mal (Oppdatert 2025-10-17):**
+Produksjonskategorier kan ha forhåndsdefinerte maler for:
+1. **Talenter** med antall (f.eks. 2x Lydtekniker, 1x Piano, 2x Lysoperatør)
+2. **Plan** med overskrifter og hendelser inkl. varighet
+3. **Oppmøtetider** med relative tidspunkt før produksjonsstart
 
-- Ved opprettelse kan request inneholde `kategoriId` og `applyTalentMal=true`.
-- Backend kopierer kun data: henter talent-malen og (om ikke oppgitt) kategoriens `plassering` for å preutfylle produksjonen.
-- Det lagres INGEN fremmednøkkel til kategori på `produksjon` (decoupled modell, migrasjon 011).
+Ved opprettelse med `applyKategoriMal=true` (automatisk ved valg av kategori):
+- **Frontend:** Automatisk henting av mal når kategori velges i dropdown
+- Backend henter komplett mal (plan, talenter, oppmøtetider) fra kategorien
+- Plan-elementer kopieres til `produksjon_plan_element` (hierarki bevares)
+- Oppmøtetider kopieres til `produksjon_oppmote` (tidspunkt beregnes basert på produksjons starttid)
+- **Talent-behov kopieres til `produksjon_talent_behov`** (viser hvor mange trengs vs tildelte, migrasjon 016)
+- Kategoriens `plassering` kopieres til produksjon hvis ikke eksplisitt oppgitt
+- Det lagres INGEN fremmednøkkel til kategori på `produksjon` (decoupled modell, migrasjon 011)
 
 **Avhengigheter:**
 - Brukermodul: Hente brukerinfo for bemanning
@@ -279,6 +302,35 @@ Produksjonskategorier kan ha en forhåndsdefinert mal av talenter med antall (f.
 
 **Bemanning Data Struktur:**
 ```javascript
+// GET /api/produksjon/:id/bemanning (Oppdatert migrasjon 016)
+{
+  "bemanning": [         // Faktisk tildelte personer
+    {
+      "id": 1,
+      "produksjon_id": 1,
+      "person_id": 1,
+      "talent_id": 1,
+      "talent_navn": "FOH Lyd",
+      "talent_kategori": "Lyd → Band",
+      "first_name": "Test",
+      "last_name": "Bruker",
+      "email": "test@example.com",
+      "status": "bekreftet"
+    }
+  ],
+  "talentBehov": [       // Behov fra kategori-mal (viser hvor mange trengs)
+    {
+      "id": 1,
+      "produksjon_id": 1,
+      "talent_id": 1,
+      "talent_navn": "FOH Lyd",
+      "talent_kategori": "Lyd → Band",
+      "antall": 2,       // 2 personer trengs for dette talentet
+      "beskrivelse": "Ansvarlig for FOH-lyd"
+    }
+  ]
+}
+
 // POST /api/produksjon/:id/bemanning
 {
   "personId": 1,
@@ -294,7 +346,7 @@ Produksjonskategorier kan ha en forhåndsdefinert mal av talenter med antall (f.
   "person_id": 1,
   "talent_id": 1,
   "talent_navn": "FOH Lyd",
-  "talent_kategori": "Lyd - Band",  // Hierarkisk kategori-navn
+  "talent_kategori": "Lyd → Band",  // Hierarkisk kategori-navn
   "status": "bekreftet"
 }
 ```

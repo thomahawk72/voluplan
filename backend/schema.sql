@@ -100,6 +100,19 @@ CREATE TABLE IF NOT EXISTS produksjonskategori_plan_mal_element (
     )
 );
 
+-- Oppmøtetider-mal for produksjonskategorier
+CREATE TABLE IF NOT EXISTS produksjonskategori_oppmote_mal (
+    id SERIAL PRIMARY KEY,
+    kategori_id INTEGER NOT NULL REFERENCES produksjonskategori(id) ON DELETE CASCADE,
+    navn VARCHAR(200) NOT NULL,
+    beskrivelse TEXT,
+    minutter_før_start INTEGER NOT NULL DEFAULT 0,
+    rekkefølge INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT check_minutter_før_start CHECK (minutter_før_start >= 0)
+);
+
 -- Produksjonsplan tabell
 CREATE TABLE IF NOT EXISTS produksjonsplan (
     id SERIAL PRIMARY KEY,
@@ -122,6 +135,49 @@ CREATE TABLE IF NOT EXISTS produksjon (
     plassering VARCHAR(200),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Produksjon plan-elementer (kopieres fra kategori plan-mal)
+CREATE TABLE IF NOT EXISTS produksjon_plan_element (
+    id SERIAL PRIMARY KEY,
+    produksjon_id INTEGER NOT NULL REFERENCES produksjon(id) ON DELETE CASCADE,
+    type VARCHAR(20) NOT NULL CHECK (type IN ('overskrift', 'hendelse')),
+    navn VARCHAR(200) NOT NULL,
+    varighet_minutter INTEGER CHECK (varighet_minutter IS NULL OR varighet_minutter >= 0),
+    parent_id INTEGER REFERENCES produksjon_plan_element(id) ON DELETE CASCADE,
+    rekkefølge INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT check_produksjon_overskrift_struktur CHECK (
+        (type = 'overskrift' AND parent_id IS NULL AND varighet_minutter IS NULL)
+        OR
+        (type = 'hendelse' AND parent_id IS NOT NULL AND varighet_minutter IS NOT NULL)
+    )
+);
+
+-- Produksjon oppmøtetider (kopieres fra kategori oppmøte-mal)
+CREATE TABLE IF NOT EXISTS produksjon_oppmote (
+    id SERIAL PRIMARY KEY,
+    produksjon_id INTEGER NOT NULL REFERENCES produksjon(id) ON DELETE CASCADE,
+    navn VARCHAR(200) NOT NULL,
+    beskrivelse TEXT,
+    tidspunkt TIMESTAMP NOT NULL,
+    rekkefølge INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Produksjon talent-behov (kopieres fra kategori talent-mal)
+CREATE TABLE IF NOT EXISTS produksjon_talent_behov (
+    id SERIAL PRIMARY KEY,
+    produksjon_id INTEGER NOT NULL REFERENCES produksjon(id) ON DELETE CASCADE,
+    talent_id INTEGER NOT NULL REFERENCES talent(id) ON DELETE CASCADE,
+    antall INTEGER NOT NULL DEFAULT 1,
+    beskrivelse TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (produksjon_id, talent_id),
+    CONSTRAINT check_antall_positiv CHECK (antall > 0)
 );
 
 -- Junction/kobling-tabell for mange-til-mange relasjon
@@ -164,4 +220,17 @@ CREATE INDEX idx_produksjon_bemanning_person_id ON produksjon_bemanning(person_i
 CREATE INDEX idx_produksjon_bemanning_talent_id ON produksjon_bemanning(talent_id);
 CREATE INDEX idx_produksjonskategori_talent_mal_kategori_id ON produksjonskategori_talent_mal(kategori_id);
 CREATE INDEX idx_produksjonskategori_talent_mal_talent_id ON produksjonskategori_talent_mal(talent_id);
+CREATE INDEX idx_produksjonskategori_plan_mal_element_kategori_id ON produksjonskategori_plan_mal_element(kategori_id);
+CREATE INDEX idx_produksjonskategori_plan_mal_element_parent_id ON produksjonskategori_plan_mal_element(parent_id);
+CREATE INDEX idx_produksjonskategori_plan_mal_element_sort_order ON produksjonskategori_plan_mal_element(kategori_id, parent_id, rekkefølge);
+CREATE INDEX idx_produksjonskategori_oppmote_mal_kategori_id ON produksjonskategori_oppmote_mal(kategori_id);
+CREATE INDEX idx_produksjonskategori_oppmote_mal_sort_order ON produksjonskategori_oppmote_mal(kategori_id, rekkefølge);
+CREATE INDEX idx_produksjon_plan_element_produksjon_id ON produksjon_plan_element(produksjon_id);
+CREATE INDEX idx_produksjon_plan_element_parent_id ON produksjon_plan_element(parent_id);
+CREATE INDEX idx_produksjon_plan_element_sort_order ON produksjon_plan_element(produksjon_id, parent_id, rekkefølge);
+CREATE INDEX idx_produksjon_oppmote_produksjon_id ON produksjon_oppmote(produksjon_id);
+CREATE INDEX idx_produksjon_oppmote_tidspunkt ON produksjon_oppmote(tidspunkt);
+CREATE INDEX idx_produksjon_oppmote_sort_order ON produksjon_oppmote(produksjon_id, rekkefølge);
+CREATE INDEX idx_produksjon_talent_behov_produksjon_id ON produksjon_talent_behov(produksjon_id);
+CREATE INDEX idx_produksjon_talent_behov_talent_id ON produksjon_talent_behov(talent_id);
 

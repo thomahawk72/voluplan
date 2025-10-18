@@ -31,6 +31,34 @@ const validateEnv = () => {
     console.log('✅ Using Heroku DATABASE_URL');
   }
 
+  // 🔴 CRITICAL: Validate JWT_SECRET in production
+  if (process.env.NODE_ENV === 'production') {
+    const weakSecrets = [
+      'your_super_secret_jwt_key_change_this_in_production',
+      'your_jwt_secret',
+      'jwt_secret',
+      'secret',
+      'changeme',
+    ];
+    
+    if (weakSecrets.some(weak => process.env.JWT_SECRET.includes(weak))) {
+      throw new Error(
+        '🔴 CRITICAL SECURITY ERROR: JWT_SECRET must be changed in production!\n' +
+        'Generate a strong secret: node -e "console.log(require(\'crypto\').randomBytes(64).toString(\'hex\'))"\n' +
+        'Then set it on Heroku: heroku config:set JWT_SECRET="<generated-secret>"'
+      );
+    }
+    
+    if (process.env.JWT_SECRET.length < 32) {
+      throw new Error(
+        '🔴 CRITICAL SECURITY ERROR: JWT_SECRET is too short (minimum 32 characters required in production)!\n' +
+        'Generate a strong secret: node -e "console.log(require(\'crypto\').randomBytes(64).toString(\'hex\'))"'
+      );
+    }
+    
+    console.log('✅ JWT_SECRET validated (strong secret detected)');
+  }
+
   // Warn about optional OAuth variables if not set
   if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
     console.warn('⚠️  Google OAuth not configured. Google login will be disabled.');

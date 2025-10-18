@@ -71,8 +71,50 @@ const requireRole = (roles) => {
   };
 };
 
+/**
+ * Middleware for horizontal access control
+ * Checks if user can access a specific resource
+ * 
+ * @param {string} paramName - Name of the route parameter containing the resource ID (e.g., 'id', 'userId')
+ * @param {string} resourceType - Type of resource ('user', 'produksjon', etc.) for logging
+ * @returns {function} Express middleware
+ * 
+ * Rules:
+ * - Admin can access all resources
+ * - User can only access their own resources (req.user.id === resource ID)
+ */
+const checkResourceOwnership = (paramName = 'id', resourceType = 'resource') => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const resourceId = parseInt(req.params[paramName], 10);
+    const userId = req.user.id;
+    const userRoles = req.user.roles || [];
+
+    // Admin can access everything
+    if (userRoles.includes('admin')) {
+      return next();
+    }
+
+    // User can only access their own data
+    if (resourceId === userId) {
+      return next();
+    }
+
+    // Forbidden - user trying to access another user's resource
+    console.warn(`[ACCESS DENIED] User ${userId} attempted to access ${resourceType} ${resourceId}`);
+    return res.status(403).json({ 
+      error: 'Insufficient permissions',
+      message: 'You can only access your own data'
+    });
+  };
+};
+
 module.exports = {
   authenticateToken,
   requireRole,
+  checkResourceOwnership,
 };
 

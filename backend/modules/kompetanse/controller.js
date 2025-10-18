@@ -253,35 +253,9 @@ const remove = async (req, res) => {
   }
 };
 
-/**
- * GET /api/kompetanse/bruker/:userId
- * Hent kompetanser for en bruker
- */
-const getByUserId = async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const kompetanser = await service.findByUserId(userId);
-    res.json({ kompetanser });
-  } catch (error) {
-    console.error('[KOMPETANSE] Get by userId error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-};
-
-/**
- * GET /api/kompetanse/:id/brukere
- * Hent brukere med en spesifikk kompetanse
- */
-const getUsersByKompetanseId = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const brukere = await service.findUsersByKompetanseId(id);
-    res.json({ brukere });
-  } catch (error) {
-    console.error('[KOMPETANSE] Get users by kompetanseId error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-};
+// DELETED: getByUserId and getUsersByKompetanseId
+// These endpoints used service functions that referenced non-existent tables
+// For user-talent relations, use /api/users/:id/talents instead (bruker module)
 
 module.exports = {
   // Kategorier
@@ -297,8 +271,7 @@ module.exports = {
   create,
   update,
   remove,
-  getByUserId,
-  getUsersByKompetanseId,
+  // getByUserId and getUsersByKompetanseId REMOVED - used non-existent tables
 };
 
 

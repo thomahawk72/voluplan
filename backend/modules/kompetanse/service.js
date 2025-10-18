@@ -257,46 +257,9 @@ const remove = async (id) => {
   return result.rows[0] || null;
 };
 
-/**
- * Finn kompetanser for en bruker
- * (basert på produksjon_bemanning)
- */
-const findByUserId = async (userId) => {
-  const result = await db.query(
-    `SELECT DISTINCT
-      k.*,
-      kk.navn as kategori_navn
-    FROM kompetanse k
-    JOIN kompetansekategori kk ON k.kategori_id = kk.id
-    JOIN produksjon_bemanning pb ON k.id = pb.kompetanse_id
-    WHERE pb.person_id = $1
-    ORDER BY kk.navn, k.navn`,
-    [userId]
-  );
-  return result.rows;
-};
-
-/**
- * Finn brukere med en spesifikk kompetanse
- * (basert på produksjon_bemanning)
- */
-const findUsersByKompetanseId = async (kompetanseId) => {
-  const result = await db.query(
-    `SELECT DISTINCT
-      u.id,
-      u.first_name,
-      u.last_name,
-      u.email,
-      COUNT(pb.id) as antall_produksjoner
-    FROM users u
-    JOIN produksjon_bemanning pb ON u.id = pb.person_id
-    WHERE pb.kompetanse_id = $1
-    GROUP BY u.id, u.first_name, u.last_name, u.email
-    ORDER BY u.last_name, u.first_name`,
-    [kompetanseId]
-  );
-  return result.rows;
-};
+// DELETED: findByUserId and findUsersByKompetanseId
+// These functions referenced non-existent tables (kompetanse, kompetansekategori)
+// The new system uses bruker_talent table (see bruker/service.js for user-talent relations)
 
 module.exports = {
   // Kategorier
@@ -312,8 +275,7 @@ module.exports = {
   create,
   update,
   remove,
-  findByUserId,
-  findUsersByKompetanseId,
+  // findByUserId and findUsersByKompetanseId REMOVED - referenced non-existent tables
 };
 
 

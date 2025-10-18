@@ -93,16 +93,9 @@ router.delete(
 // KOMPETANSER
 // ============================================================================
 
-/**
- * GET /api/kompetanse/bruker/:userId
- * Hent kompetanser for en bruker
- * (Må komme før /:id for å unngå konflikt)
- */
-router.get(
-  '/bruker/:userId',
-  authenticateToken,
-  controller.getByUserId
-);
+// DELETED: GET /api/kompetanse/bruker/:userId
+// Endpoint removed - used non-existent tables
+// Use GET /api/users/:id/talents instead
 
 /**
  * GET /api/kompetanse
@@ -124,15 +117,9 @@ router.get(
   controller.get
 );
 
-/**
- * GET /api/kompetanse/:id/brukere
- * Hent brukere med en spesifikk kompetanse
- */
-router.get(
-  '/:id/brukere',
-  authenticateToken,
-  controller.getUsersByKompetanseId
-);
+// DELETED: GET /api/kompetanse/:id/brukere
+// Endpoint removed - used non-existent tables
+// Query users with specific talent via bruker module instead
 
 /**
  * POST /api/kompetanse

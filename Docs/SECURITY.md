@@ -35,6 +35,8 @@ Dette dokumentet beskriver sikkerhetstiltakene implementert i Voluplan backend.
 
 ### 6. Environment Validation
 - Sjekker at alle påkrevde env-variabler er satt ved oppstart
+- **🆕 JWT_SECRET validering i production**: Krever sterkt secret (min 32 tegn)
+- **🆕 Demo-secret detektion**: Blokkerer kjente svake secrets i production
 - Advarer om manglende optional konfigurasjoner
 - Feilmelding med liste over manglende variabler
 
@@ -43,6 +45,14 @@ Dette dokumentet beskriver sikkerhetstiltakene implementert i Voluplan backend.
 - Prepared statements (parameteriserte queries)
 - Separate database user med least privilege
 - Connection timeout konfigurert
+
+### 8. 🆕 Security Headers (Helmet.js)
+- **Content-Security-Policy (CSP)**: Blokkerer inline scripts, kun tillater self
+- **X-Frame-Options**: DENY - forhindrer clickjacking
+- **X-Content-Type-Options**: nosniff - forhindrer MIME sniffing
+- **Strict-Transport-Security (HSTS)**: 1 år max-age, includeSubDomains, preload
+- **X-XSS-Protection**: Aktivert
+- **Permissions-Policy**: Begrenset tilgang til browser features
 
 ## 🔒 Best Practices
 

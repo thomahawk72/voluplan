@@ -7,7 +7,7 @@ const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const controller = require('./controller');
-const { authenticateToken, requireRole } = require('../../shared/middleware/auth');
+const { authenticateToken, requireRole, checkResourceOwnership } = require('../../shared/middleware/auth');
 const { createLoginLimiter, createPasswordResetLimiter } = require('../../shared/middleware/rateLimiter');
 const passport = require('../../shared/config/passport');
 
@@ -151,10 +151,12 @@ router.get(
 /**
  * GET /api/users/:id
  * Hent bruker med ID
+ * Horizontal access control: Only admin or the user themselves can view
  */
 router.get(
   '/users/:id',
   authenticateToken,
+  checkResourceOwnership('id', 'user'),
   controller.get
 );
 
@@ -180,10 +182,12 @@ router.post(
 /**
  * PUT /api/users/:id
  * Oppdater bruker
+ * Horizontal access control: Only admin or the user themselves can update
  */
 router.put(
   '/users/:id',
   authenticateToken,
+  checkResourceOwnership('id', 'user'),
   [
     body('firstName').optional().trim().notEmpty(),
     body('lastName').optional().trim().notEmpty(),
@@ -231,10 +235,12 @@ router.post(
 /**
  * GET /api/users/:id/talents
  * Hent alle talents for en bruker
+ * Horizontal access control: Only admin or the user themselves can view their talents
  */
 router.get(
   '/users/:id/talents',
   authenticateToken,
+  checkResourceOwnership('id', 'user-talents'),
   controller.getUserTalents
 );
 

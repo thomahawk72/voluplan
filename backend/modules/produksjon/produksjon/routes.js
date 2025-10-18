@@ -7,7 +7,7 @@ const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const controller = require('./controller');
-const { authenticateToken, requireRole } = require('../../../shared/middleware/auth');
+const { authenticateToken, requireRole, checkResourceOwnership } = require('../../../shared/middleware/auth');
 
 /**
  * Middleware for validering
@@ -21,7 +21,8 @@ const validate = (req, res, next) => {
 };
 
 // Hent produksjoner for en bruker
-router.get('/bruker/:userId', authenticateToken, controller.getByUserId);
+// Horizontal access control: Only admin or the user themselves can view their productions
+router.get('/bruker/:userId', authenticateToken, checkResourceOwnership('userId', 'user-productions'), controller.getByUserId);
 
 // Hent produksjon med ID
 router.get('/:id', authenticateToken, controller.get);

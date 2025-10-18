@@ -13,6 +13,7 @@ jest.mock('../../../shared/middleware/auth', () => ({
     next();
   },
   requireRole: () => (req, res, next) => next(),
+  checkResourceOwnership: (paramName, resourceType) => (req, res, next) => next(), // Mock horizontal access control
 }));
 
 const app = express();

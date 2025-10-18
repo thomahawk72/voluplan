@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { Box, Card, CardContent, Typography, TextField, Button, Alert } from '@mui/material';
+import React from 'react';
+import { Box, Card, CardContent, Typography, Alert } from '@mui/material';
 import { Schedule } from '@mui/icons-material';
-import { ProduksjonsPlan, Produksjon, produksjonAPI } from '../../services/api';
+import { ProduksjonsPlan, Produksjon } from '../../services/api';
 
 interface PlanCardProps {
   visible: boolean;
@@ -10,26 +10,7 @@ interface PlanCardProps {
 }
 
 const PlanCard: React.FC<PlanCardProps> = ({ visible, plan, produksjon }) => {
-  const [plassering, setPlassering] = useState<string>(produksjon.plassering || '');
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
-
   if (!visible) return null;
-
-  const handleSave = async () => {
-    try {
-      setSaving(true);
-      setError(null);
-      setSaved(false);
-      await produksjonAPI.updateProduksjon(produksjon.id, { plassering });
-      setSaved(true);
-    } catch (e: any) {
-      setError('Kunne ikke lagre plassering');
-    } finally {
-      setSaving(false);
-    }
-  };
 
   return (
     <Box sx={{ mb: 3 }}>
@@ -72,26 +53,6 @@ const PlanCard: React.FC<PlanCardProps> = ({ visible, plan, produksjon }) => {
               </Box>
             </Box>
           )}
-
-          <Typography variant="h6" sx={{ fontWeight: 600, mt: 4, mb: 2 }}>
-            Plan og plassering
-          </Typography>
-
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr auto' }, gap: 2, alignItems: 'center' }}>
-            <TextField
-              label="Plassering"
-              placeholder="F.eks. Hovedscene, Backstage"
-              value={plassering}
-              onChange={(e) => setPlassering(e.target.value)}
-              fullWidth
-            />
-            <Button variant="contained" onClick={handleSave} disabled={saving}>
-              {saving ? 'Lagrer...' : 'Lagre'}
-            </Button>
-          </Box>
-
-          {saved && <Alert sx={{ mt: 2 }} severity="success">Lagret</Alert>}
-          {error && <Alert sx={{ mt: 2 }} severity="error">{error}</Alert>}
         </CardContent>
       </Card>
     </Box>

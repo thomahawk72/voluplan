@@ -54,6 +54,15 @@ Dette dokumentet beskriver sikkerhetstiltakene implementert i Voluplan backend.
 - **X-XSS-Protection**: Aktivert
 - **Permissions-Policy**: Begrenset tilgang til browser features
 
+### 9. 🆕 Horizontal Access Control (2025-10-18)
+- **checkResourceOwnership middleware**: Sikrer at brukere kun kan aksessere egne ressurser
+- **Beskyttede endpoints**:
+  - GET/PUT /api/users/:id - Kun admin eller brukeren selv
+  - GET /api/users/:id/talents - Kun admin eller brukeren selv
+  - GET /api/produksjon/bruker/:userId - Kun admin eller brukeren selv
+- **Admin bypass**: Admin-rolle har tilgang til alle ressurser
+- **Logging**: Uautoriserte forsøk logges med warning
+
 ## 🔒 Best Practices
 
 ### Password Policy

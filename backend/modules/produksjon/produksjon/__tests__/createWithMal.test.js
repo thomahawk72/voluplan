@@ -9,23 +9,31 @@ const db = require('../../../../shared/config/database');
 describe('Opprett produksjon med kategori-mal (TDD)', () => {
   let testKategoriId;
   let testTalentIds;
+  let testTalentKategoriId;
 
   beforeAll(async () => {
-    // Setup: Opprett test-kategori
+    // Setup: Opprett talentkategori (autonomt - ikke avhengig av eksisterende data)
+    const talentKategori = await db.query(
+      'INSERT INTO talentkategori (navn, parent_id) VALUES ($1, $2) RETURNING id',
+      ['TDD Test Talent Kategori', null]
+    );
+    testTalentKategoriId = talentKategori.rows[0].id;
+
+    // Setup: Opprett test-kategori for produksjon
     const kategori = await db.query(
       'INSERT INTO produksjonskategori (navn, beskrivelse, plassering) VALUES ($1, $2, $3) RETURNING id',
       ['TDD Test Kategori', 'For testing', 'Test Location']
     );
     testKategoriId = kategori.rows[0].id;
 
-    // Setup: Opprett test-talenter (vi må ha eksisterende talenter)
+    // Setup: Opprett test-talenter med vår egen kategori
     const talent1 = await db.query(
       'INSERT INTO talent (navn, kategori_id) VALUES ($1, $2) RETURNING id',
-      ['Test Talent 1', 1] // Antar at kategori 1 eksisterer
+      ['Test Talent 1', testTalentKategoriId]
     );
     const talent2 = await db.query(
       'INSERT INTO talent (navn, kategori_id) VALUES ($1, $2) RETURNING id',
-      ['Test Talent 2', 1]
+      ['Test Talent 2', testTalentKategoriId]
     );
     testTalentIds = [talent1.rows[0].id, talent2.rows[0].id];
 
@@ -57,10 +65,11 @@ describe('Opprett produksjon med kategori-mal (TDD)', () => {
   });
 
   afterAll(async () => {
-    // Cleanup: Slett test-data
+    // Cleanup: Slett test-data (i riktig rekkefølge pga foreign keys)
     await db.query('DELETE FROM produksjon WHERE navn LIKE $1', ['TDD Test Produksjon%']);
     await db.query('DELETE FROM talent WHERE navn LIKE $1', ['Test Talent%']);
     await db.query('DELETE FROM produksjonskategori WHERE id = $1', [testKategoriId]);
+    await db.query('DELETE FROM talentkategori WHERE id = $1', [testTalentKategoriId]);
   });
 
   it('skal kopiere talent-behov når applyKategoriMal=true', async () => {

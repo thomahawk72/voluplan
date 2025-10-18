@@ -79,6 +79,7 @@ const EmployeeCard: React.FC<EmployeeCardProps> = ({
   getStatusLabel,
 }) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerPinned, setDrawerPinned] = useState(false);
   const [selectedTalent, setSelectedTalent] = useState<{
     talent_navn: string;
     talent_kategori: string;
@@ -170,17 +171,38 @@ const EmployeeCard: React.FC<EmployeeCardProps> = ({
   };
 
   const handleTalentClick = (behov: TalentBehovMedStatus) => {
-    setSelectedTalent({
+    const newTalent = {
       talent_navn: behov.talent_navn,
       talent_kategori: behov.talent_kategori,
       antall: behov.antall,
       antallFylt: behov.antallFylt,
-    });
-    setDrawerOpen(true);
+    };
+    
+    setSelectedTalent(newTalent);
+    
+    // Hvis drawer ikke er åpen, åpne den
+    if (!drawerOpen) {
+      setDrawerOpen(true);
+    }
+    // Hvis drawer er åpen og pinned, vil den automatisk oppdatere innhold via useEffect
   };
 
   const handleDrawerSuccess = () => {
     onRefresh();
+  };
+
+  const handleDrawerClose = () => {
+    // Hvis pinned, ikke lukk drawer - bare upinn den
+    if (drawerPinned) {
+      setDrawerPinned(false);
+    } else {
+      setDrawerOpen(false);
+      setSelectedTalent(null);
+    }
+  };
+
+  const handleDrawerPinToggle = (pinned: boolean) => {
+    setDrawerPinned(pinned);
   };
 
   const toggleCategory = (kategori: string) => {
@@ -205,7 +227,14 @@ const EmployeeCard: React.FC<EmployeeCardProps> = ({
   return (
     <Box sx={{ mb: 3 }}>
       <Card sx={{ boxShadow: 3, position: 'relative', overflow: 'visible' }}>
-        <CardContent sx={{ position: 'relative', minHeight: 400 }}>
+        <CardContent 
+          sx={{ 
+            position: 'relative', 
+            minHeight: 400,
+            transition: 'margin-right 0.3s ease-in-out, width 0.3s ease-in-out',
+            marginRight: drawerPinned ? '420px' : 0,
+          }}
+        >
           {/* Header */}
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -440,10 +469,12 @@ const EmployeeCard: React.FC<EmployeeCardProps> = ({
           {/* Bemanning Drawer */}
           <BemanningDrawer
             open={drawerOpen}
-            onClose={() => setDrawerOpen(false)}
+            onClose={handleDrawerClose}
             produksjonId={produksjonId}
             selectedTalent={selectedTalent}
             onSuccess={handleDrawerSuccess}
+            onPinToggle={handleDrawerPinToggle}
+            isPinned={drawerPinned}
           />
         </CardContent>
       </Card>
@@ -459,9 +490,33 @@ interface TalentRowProps {
   getStatusColor: (status: string) => 'success' | 'warning' | 'error' | 'default';
 }
 
+// Generer subtil bakgrunnsfarge basert på kategori
+const getCategoryShading = (kategori: string): string => {
+  // Hash-funksjon for å få konsistent farge basert på kategori-navn
+  let hash = 0;
+  for (let i = 0; i < kategori.length; i++) {
+    hash = kategori.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  
+  // Bruk hash til å velge mellom subtile farger
+  const colors = [
+    'rgba(102, 126, 234, 0.08)', // Lys blå
+    'rgba(76, 175, 80, 0.08)',   // Lys grønn
+    'rgba(255, 152, 0, 0.08)',   // Lys oransje
+    'rgba(156, 39, 176, 0.08)',  // Lys lilla
+    'rgba(33, 150, 243, 0.08)',  // Lys cyan
+    'rgba(233, 30, 99, 0.08)',   // Lys rosa
+  ];
+  
+  const index = Math.abs(hash) % colors.length;
+  return colors[index];
+};
+
 const TalentRow: React.FC<TalentRowProps> = ({ talent, onBemanne, getStatusLabel, getStatusColor }) => {
   const kategoriParts = talent.talent_kategori?.split(' → ') || [];
   const kategoriLabel = kategoriParts[kategoriParts.length - 1] || '';
+  const topLevelKategori = kategoriParts[0] || talent.talent_kategori || '';
+  const categoryBg = getCategoryShading(topLevelKategori);
 
   return (
     <Box 
@@ -474,7 +529,8 @@ const TalentRow: React.FC<TalentRowProps> = ({ talent, onBemanne, getStatusLabel
         border: '1px solid',
         borderColor: 'divider',
         borderRadius: 1,
-        '&:hover': { bgcolor: 'rgba(102, 126, 234, 0.02)' },
+        bgcolor: categoryBg,
+        '&:hover': { bgcolor: 'rgba(102, 126, 234, 0.15)' },
         transition: 'background-color 0.2s',
       }}
     >

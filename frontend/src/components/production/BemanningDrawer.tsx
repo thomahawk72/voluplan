@@ -39,6 +39,8 @@ interface BemanningDrawerProps {
     antallFylt: number;
   } | null;
   onSuccess: () => void;
+  onPinToggle: (pinned: boolean) => void;
+  isPinned: boolean;
 }
 
 interface User {
@@ -63,8 +65,9 @@ const BemanningDrawer: React.FC<BemanningDrawerProps> = ({
   produksjonId,
   selectedTalent,
   onSuccess,
+  onPinToggle,
+  isPinned,
 }) => {
-  const [pinned, setPinned] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -121,9 +124,9 @@ const BemanningDrawer: React.FC<BemanningDrawerProps> = ({
   useEffect(() => {
     if (open && selectedTalent) {
       fetchUsers();
-      setSelectedUsers(new Set()); // Reset selected users when opening
+      setSelectedUsers(new Set()); // Reset selected users when talent changes
     }
-  }, [open, selectedTalent, showAllUsers, fetchUsers]);
+  }, [open, selectedTalent?.talent_navn, showAllUsers, fetchUsers]); // Listen to talent_navn specifically
 
   const toggleUserSelection = (userId: number, event?: React.MouseEvent) => {
     event?.stopPropagation();
@@ -165,7 +168,11 @@ const BemanningDrawer: React.FC<BemanningDrawerProps> = ({
       
       onSuccess(); // Refresh data
       setSelectedUsers(new Set()); // Clear selection
-      onClose(); // Close drawer
+      
+      // Hvis ikke pinned, lukk drawer. Hvis pinned, hold åpen for neste talent
+      if (!isPinned) {
+        onClose();
+      }
     } catch (err: any) {
       console.error('Feil ved tildeling:', err);
       setError(err.response?.data?.error || 'Kunne ikke tildele medarbeidere');
@@ -189,16 +196,16 @@ const BemanningDrawer: React.FC<BemanningDrawerProps> = ({
     <Slide direction="left" in={open} mountOnEnter unmountOnExit>
       <Box
         sx={{
-          position: 'absolute', // Positioned relative to parent EmployeeCard
-          top: 0,
+          position: isPinned ? 'fixed' : 'absolute',
+          top: isPinned ? 0 : 0,
           right: 0,
-          bottom: 0,
-          width: pinned ? 400 : { xs: '100%', sm: 400 },
+          bottom: isPinned ? 0 : 0,
+          width: isPinned ? 400 : { xs: '100%', sm: 400 },
           bgcolor: 'background.paper',
           borderLeft: '2px solid',
           borderColor: 'divider',
           boxShadow: 4,
-          zIndex: pinned ? 1000 : 1100,
+          zIndex: isPinned ? 1200 : 1100,
           overflow: 'auto',
           display: 'flex',
           flexDirection: 'column',
@@ -206,17 +213,19 @@ const BemanningDrawer: React.FC<BemanningDrawerProps> = ({
       >
         {/* Header */}
         <Box
+          key={selectedTalent?.talent_navn} // Force re-render when talent changes
           sx={{
             p: 2,
             borderBottom: '1px solid',
             borderColor: 'divider',
-            bgcolor: 'background.paper',
+            bgcolor: isPinned ? 'primary.light' : 'background.paper',
             position: 'sticky',
             top: 0,
             zIndex: 2,
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'flex-start',
+            transition: 'background-color 0.2s',
           }}
         >
           <Box sx={{ flex: 1 }}>
@@ -232,12 +241,12 @@ const BemanningDrawer: React.FC<BemanningDrawerProps> = ({
           </Box>
           <Box sx={{ display: 'flex', gap: 0.5 }}>
             <IconButton
-              onClick={() => setPinned(!pinned)}
-              color={pinned ? 'primary' : 'default'}
-              title={pinned ? 'Løsne drawer' : 'Fest drawer'}
+              onClick={() => onPinToggle(!isPinned)}
+              color={isPinned ? 'primary' : 'default'}
+              title={isPinned ? 'Løsne drawer' : 'Fest drawer'}
               size="small"
             >
-              {pinned ? <PinIcon /> : <UnpinIcon />}
+              {isPinned ? <PinIcon /> : <UnpinIcon />}
             </IconButton>
             <IconButton onClick={onClose} size="small">
               <CloseIcon />

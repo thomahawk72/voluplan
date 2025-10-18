@@ -178,6 +178,29 @@ describe('Produksjonskategori CRUD', () => {
   describe('deleteKategoriDeep', () => {
     let deepDeleteTestKategoriId;
     let deepDeleteTestKategoriCounter = 0;
+    let testTalentKategoriId;
+    let testTalentId;
+
+    beforeAll(async () => {
+      // Setup: Opprett talentkategori og talent (autonomt)
+      const talentKategori = await db.query(
+        'INSERT INTO talentkategori (navn, parent_id) VALUES ($1, $2) RETURNING id',
+        ['Test Kategori Deep Delete Talent', null]
+      );
+      testTalentKategoriId = talentKategori.rows[0].id;
+
+      const talent = await db.query(
+        'INSERT INTO talent (navn, kategori_id) VALUES ($1, $2) RETURNING id',
+        ['Test Deep Delete Talent', testTalentKategoriId]
+      );
+      testTalentId = talent.rows[0].id;
+    });
+
+    afterAll(async () => {
+      // Cleanup
+      await db.query('DELETE FROM talent WHERE id = $1', [testTalentId]);
+      await db.query('DELETE FROM talentkategori WHERE id = $1', [testTalentKategoriId]);
+    });
 
     beforeEach(async () => {
       // Opprett en kategori med talent-mal med unikt navn
@@ -187,10 +210,10 @@ describe('Produksjonskategori CRUD', () => {
       });
       deepDeleteTestKategoriId = kategori.id;
 
-      // Legg til talent-mal
+      // Legg til talent-mal med vårt test-talent
       await db.query(
-        'INSERT INTO produksjonskategori_talent_mal (kategori_id, talent_id, antall) VALUES ($1, 1, 2)',
-        [deepDeleteTestKategoriId]
+        'INSERT INTO produksjonskategori_talent_mal (kategori_id, talent_id, antall) VALUES ($1, $2, 2)',
+        [deepDeleteTestKategoriId, testTalentId]
       );
     });
 

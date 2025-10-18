@@ -6,12 +6,19 @@ const service = require('../service');
 const db = require('../../../shared/config/database');
 
 describe('Hente brukere med talenter for bemanning (TDD)', () => {
-  let testUserId1, testUserId2, testTalentId1, testTalentId2;
+  let testUserId1, testUserId2, testTalentId1, testTalentId2, testKategoriId;
 
   beforeAll(async () => {
     // Cleanup først i tilfelle test feilet sist gang
     await db.query('DELETE FROM users WHERE email IN ($1, $2)', ['pianist-test@voluplan.test', 'gitarist-test@voluplan.test']);
     
+    // Setup: Opprett talentkategori (autonomt - ikke avhengig av eksisterende data)
+    const kategori = await db.query(
+      'INSERT INTO talentkategori (navn, parent_id) VALUES ($1, $2) RETURNING id',
+      ['Test Musikk Kategori', null]
+    );
+    testKategoriId = kategori.rows[0].id;
+
     // Setup: Opprett test-brukere
     const user1 = await db.query(
       'INSERT INTO users (first_name, last_name, email, password_hash) VALUES ($1, $2, $3, $4) RETURNING id',
@@ -25,16 +32,16 @@ describe('Hente brukere med talenter for bemanning (TDD)', () => {
     );
     testUserId2 = user2.rows[0].id;
 
-    // Setup: Opprett test-talenter (eller bruk eksisterende)
+    // Setup: Opprett test-talenter med vår egen kategori
     const talent1 = await db.query(
       'INSERT INTO talent (navn, kategori_id) VALUES ($1, $2) RETURNING id',
-      ['Test Piano Talent', 1]
+      ['Test Piano Talent', testKategoriId]
     );
     testTalentId1 = talent1.rows[0].id;
 
     const talent2 = await db.query(
       'INSERT INTO talent (navn, kategori_id) VALUES ($1, $2) RETURNING id',
-      ['Test Gitar Talent', 1]
+      ['Test Gitar Talent', testKategoriId]
     );
     testTalentId2 = talent2.rows[0].id;
 
@@ -54,10 +61,11 @@ describe('Hente brukere med talenter for bemanning (TDD)', () => {
   });
 
   afterAll(async () => {
-    // Cleanup
+    // Cleanup (i riktig rekkefølge pga foreign keys)
     await db.query('DELETE FROM bruker_talent WHERE bruker_id IN ($1, $2)', [testUserId1, testUserId2]);
     await db.query('DELETE FROM users WHERE id IN ($1, $2)', [testUserId1, testUserId2]);
     await db.query('DELETE FROM talent WHERE id IN ($1, $2)', [testTalentId1, testTalentId2]);
+    await db.query('DELETE FROM talentkategori WHERE id = $1', [testKategoriId]);
   });
 
   it('skal hente alle brukere med deres talenter', async () => {

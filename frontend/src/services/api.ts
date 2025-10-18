@@ -402,42 +402,42 @@ export const produksjonAPI = {
 export const talentAPI = {
   // Kategorier
   getAllKategorier: async (): Promise<{ kategorier: TalentKategori[] }> => {
-    const response = await api.get('/kompetanse/kategorier');
+    const response = await api.get('/talent/kategorier');
     return response.data;
   },
 
   createKategori: async (data: { navn: string; parentId?: number; beskrivelse?: string }): Promise<{ kategori: TalentKategori }> => {
-    const response = await api.post('/kompetanse/kategorier', data);
+    const response = await api.post('/talent/kategorier', data);
     return response.data;
   },
 
   updateKategori: async (id: number, data: { navn?: string; parentId?: number; beskrivelse?: string }): Promise<{ kategori: TalentKategori }> => {
-    const response = await api.put(`/kompetanse/kategorier/${id}`, data);
+    const response = await api.put(`/talent/kategorier/${id}`, data);
     return response.data;
   },
 
   deleteKategori: async (id: number): Promise<void> => {
-    await api.delete(`/kompetanse/kategorier/${id}`);
+    await api.delete(`/talent/kategorier/${id}`);
   },
 
   // Talenter
-  getAll: async (): Promise<{ kompetanser: Talent[] }> => {
-    const response = await api.get('/kompetanse');
+  getAll: async (): Promise<{ talenter: Talent[] }> => {
+    const response = await api.get('/talent');
     return response.data;
   },
 
-  create: async (data: { navn: string; kategoriId: number; lederId?: number; beskrivelse?: string }): Promise<{ kompetanse: Talent }> => {
-    const response = await api.post('/kompetanse', data);
+  create: async (data: { navn: string; kategoriId: number; lederId?: number; beskrivelse?: string }): Promise<{ talent: Talent }> => {
+    const response = await api.post('/talent', data);
     return response.data;
   },
 
-  update: async (id: number, data: { navn?: string; kategoriId?: number; lederId?: number; beskrivelse?: string }): Promise<{ kompetanse: Talent }> => {
-    const response = await api.put(`/kompetanse/${id}`, data);
+  update: async (id: number, data: { navn?: string; kategoriId?: number; lederId?: number; beskrivelse?: string }): Promise<{ talent: Talent }> => {
+    const response = await api.put(`/talent/${id}`, data);
     return response.data;
   },
 
   delete: async (id: number): Promise<void> => {
-    await api.delete(`/kompetanse/${id}`);
+    await api.delete(`/talent/${id}`);
   },
 };
 

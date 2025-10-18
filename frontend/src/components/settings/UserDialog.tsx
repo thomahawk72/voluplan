@@ -81,7 +81,7 @@ const UserDialog: React.FC<UserDialogProps> = ({ open, onClose, userId: initialU
 
       // Hent alle tilgjengelige talents
       const talentsData = await talentAPI.getAll();
-      setAllTalents(talentsData.kompetanser || []);
+      setAllTalents(talentsData.talenter || []);
 
       // Hvis edit mode, hent brukerdata og brukerens talents
       if (userId) {

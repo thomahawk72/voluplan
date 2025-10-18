@@ -57,7 +57,7 @@ app.use('/api/', createGeneralLimiter());
 
 // Module Routes
 app.use('/api', require('./modules/bruker/routes'));
-app.use('/api/kompetanse', require('./modules/kompetanse/routes'));
+app.use('/api/talent', require('./modules/talent/routes'));
 app.use('/api/produksjon', require('./modules/produksjon/routes'));
 
 // Health check

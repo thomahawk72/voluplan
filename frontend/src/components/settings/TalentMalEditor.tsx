@@ -53,7 +53,7 @@ const TalentMalEditor: React.FC<Props> = ({ kategoriId, kategoriNavn, onSave }) 
       // Grupper talenter etter talent-kategori ID
       const selMap = new Map<number, TalentSelection[]>();
       
-      talentData.kompetanser.forEach((talent: Talent) => {
+      talentData.talenter.forEach((talent: Talent) => {
         if (!selMap.has(talent.kategori_id)) {
           selMap.set(talent.kategori_id, []);
         }

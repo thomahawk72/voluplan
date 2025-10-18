@@ -18,7 +18,7 @@ export const useTalentData = () => {
       ]);
       
       setKategorier(kategoriData.kategorier || []);
-      setTalenter(talentData.kompetanser || []);
+      setTalenter(talentData.talenter || []);
     } catch (err: any) {
       console.error('Feil ved lasting av data:', err);
       setError('Kunne ikke laste data. Vennligst prøv igjen.');

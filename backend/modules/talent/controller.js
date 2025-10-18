@@ -1,31 +1,31 @@
 /**
- * Kompetanse Controller
- * Håndterer HTTP-requests og responses for kompetanse-endepunkter
+ * Talent Controller
+ * Håndterer HTTP-requests og responses for talent-endepunkter
  */
 
 const service = require('./service');
 
 // ============================================================================
-// KOMPETANSEKATEGORIER
+// TALENT KATEGORIER
 // ============================================================================
 
 /**
- * GET /api/kompetanse/kategorier
- * Liste alle kompetansekategorier
+ * GET /api/talent/kategorier
+ * Liste alle talent kategorier
  */
 const listKategorier = async (req, res) => {
   try {
     const kategorier = await service.findAllKategorier();
     res.json({ kategorier });
   } catch (error) {
-    console.error('[KOMPETANSE] List kategorier error:', error);
+    console.error('[TALENT] List kategorier error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
 
 /**
- * GET /api/kompetanse/kategorier/:id
- * Hent kompetansekategori med ID
+ * GET /api/talent/kategorier/:id
+ * Hent talent kategori med ID
  */
 const getKategori = async (req, res) => {
   try {
@@ -38,14 +38,14 @@ const getKategori = async (req, res) => {
     
     res.json({ kategori });
   } catch (error) {
-    console.error('[KOMPETANSE] Get kategori error:', error);
+    console.error('[TALENT] Get kategori error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
 
 /**
- * POST /api/kompetanse/kategorier
- * Opprett ny kompetansekategori
+ * POST /api/talent/kategorier
+ * Opprett ny talent kategori
  */
 const createKategori = async (req, res) => {
   try {
@@ -64,7 +64,7 @@ const createKategori = async (req, res) => {
     const kategori = await service.createKategori({ navn, parentId, beskrivelse });
     res.status(201).json({ kategori });
   } catch (error) {
-    console.error('[KOMPETANSE] Create kategori error:', error);
+    console.error('[TALENT] Create kategori error:', error);
     if (error.code === '23505') { // Unique violation
       return res.status(400).json({ error: 'Kategori med dette navnet finnes allerede for denne parent' });
     }
@@ -73,8 +73,8 @@ const createKategori = async (req, res) => {
 };
 
 /**
- * PUT /api/kompetanse/kategorier/:id
- * Oppdater kompetansekategori
+ * PUT /api/talent/kategorier/:id
+ * Oppdater talent kategori
  */
 const updateKategori = async (req, res) => {
   try {
@@ -89,7 +89,7 @@ const updateKategori = async (req, res) => {
     
     res.json({ kategori });
   } catch (error) {
-    console.error('[KOMPETANSE] Update kategori error:', error);
+    console.error('[TALENT] Update kategori error:', error);
     if (error.code === '23505') { // Unique violation
       return res.status(400).json({ error: 'Kategori med dette navnet finnes allerede' });
     }
@@ -98,8 +98,8 @@ const updateKategori = async (req, res) => {
 };
 
 /**
- * DELETE /api/kompetanse/kategorier/:id
- * Slett kompetansekategori
+ * DELETE /api/talent/kategorier/:id
+ * Slett talent kategori
  */
 const deleteKategori = async (req, res) => {
   try {
@@ -112,7 +112,7 @@ const deleteKategori = async (req, res) => {
     
     res.json({ message: 'Kategori deleted successfully' });
   } catch (error) {
-    console.error('[KOMPETANSE] Delete kategori error:', error);
+    console.error('[TALENT] Delete kategori error:', error);
     if (error.code === '23503') { // Foreign key violation
       const detail = error.detail || '';
       if (detail.includes('talent')) {
@@ -128,47 +128,47 @@ const deleteKategori = async (req, res) => {
 };
 
 // ============================================================================
-// KOMPETANSER
+// TALENTER
 // ============================================================================
 
 /**
- * GET /api/kompetanse
- * Liste alle kompetanser
+ * GET /api/talent
+ * Liste alle talenter
  */
 const list = async (req, res) => {
   try {
     const { kategoriId, lederId } = req.query;
-    const kompetanser = await service.findAll({ kategoriId, lederId });
-    res.json({ kompetanser });
+    const talenter = await service.findAll({ kategoriId, lederId });
+    res.json({ talenter });
   } catch (error) {
-    console.error('[KOMPETANSE] List kompetanser error:', error);
+    console.error('[TALENT] List talenter error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
 
 /**
- * GET /api/kompetanse/:id
- * Hent kompetanse med ID
+ * GET /api/talent/:id
+ * Hent talent med ID
  */
 const get = async (req, res) => {
   try {
     const { id } = req.params;
-    const kompetanse = await service.findById(id);
+    const talent = await service.findById(id);
     
-    if (!kompetanse) {
-      return res.status(404).json({ error: 'Kompetanse not found' });
+    if (!talent) {
+      return res.status(404).json({ error: 'Talent not found' });
     }
     
-    res.json({ kompetanse });
+    res.json({ talent });
   } catch (error) {
-    console.error('[KOMPETANSE] Get kompetanse error:', error);
+    console.error('[TALENT] Get talent error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
 
 /**
- * POST /api/kompetanse
- * Opprett ny kompetanse
+ * POST /api/talent
+ * Opprett ny talent
  */
 const create = async (req, res) => {
   try {
@@ -184,15 +184,15 @@ const create = async (req, res) => {
       });
     }
     
-    const kompetanse = await service.create({
+    const talent = await service.create({
       navn,
       kategoriId,
       lederId,
       beskrivelse,
     });
-    res.status(201).json({ kompetanse });
+    res.status(201).json({ talent });
   } catch (error) {
-    console.error('[KOMPETANSE] Create kompetanse error:', error);
+    console.error('[TALENT] Create talent error:', error);
     if (error.code === '23503') { // Foreign key violation
       return res.status(400).json({ error: 'Ugyldig kategori eller leder' });
     }
@@ -201,28 +201,28 @@ const create = async (req, res) => {
 };
 
 /**
- * PUT /api/kompetanse/:id
- * Oppdater kompetanse
+ * PUT /api/talent/:id
+ * Oppdater talent
  */
 const update = async (req, res) => {
   try {
     const { id } = req.params;
     const { navn, kategoriId, lederId, beskrivelse } = req.body;
     
-    const kompetanse = await service.update(id, {
+    const talent = await service.update(id, {
       navn,
       kategoriId,
       lederId,
       beskrivelse,
     });
     
-    if (!kompetanse) {
-      return res.status(404).json({ error: 'Kompetanse not found' });
+    if (!talent) {
+      return res.status(404).json({ error: 'Talent not found' });
     }
     
-    res.json({ kompetanse });
+    res.json({ talent });
   } catch (error) {
-    console.error('[KOMPETANSE] Update kompetanse error:', error);
+    console.error('[TALENT] Update talent error:', error);
     if (error.code === '23503') { // Foreign key violation
       return res.status(400).json({ error: 'Ugyldig kategori eller leder' });
     }
@@ -231,8 +231,8 @@ const update = async (req, res) => {
 };
 
 /**
- * DELETE /api/kompetanse/:id
- * Slett kompetanse
+ * DELETE /api/talent/:id
+ * Slett talent
  */
 const remove = async (req, res) => {
   try {
@@ -240,12 +240,12 @@ const remove = async (req, res) => {
     const deleted = await service.remove(id);
     
     if (!deleted) {
-      return res.status(404).json({ error: 'Kompetanse not found' });
+      return res.status(404).json({ error: 'Talent not found' });
     }
     
-    res.json({ message: 'Kompetanse deleted successfully' });
+    res.json({ message: 'Talent deleted successfully' });
   } catch (error) {
-    console.error('[KOMPETANSE] Delete kompetanse error:', error);
+    console.error('[TALENT] Delete talent error:', error);
     if (error.code === '23503') { // Foreign key violation
       return res.status(400).json({ error: 'Kan ikke slette talent: ' + (error.detail || 'Foreign key constraint') });
     }

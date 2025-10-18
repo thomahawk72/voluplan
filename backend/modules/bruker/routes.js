@@ -8,7 +8,7 @@ const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const controller = require('./controller');
 const { authenticateToken, requireRole, checkResourceOwnership } = require('../../shared/middleware/auth');
-const { createLoginLimiter, createPasswordResetLimiter } = require('../../shared/middleware/rateLimiter');
+const { createLoginLimiter, createPasswordResetLimiter, createMutationLimiter } = require('../../shared/middleware/rateLimiter');
 const passport = require('../../shared/config/passport');
 
 /**

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { produksjonAPI, Produksjon, Bemanning, ProduksjonsPlan } from '../services/api';
+import { produksjonAPI, Produksjon, Bemanning, ProduksjonsPlan, PlanElement } from '../services/api';
 
 export interface TalentBehov {
   id: number;
@@ -16,6 +16,7 @@ export const useProductionData = (id: string | undefined) => {
   const [bemanning, setBemanning] = useState<Bemanning[]>([]);
   const [talentBehov, setTalentBehov] = useState<TalentBehov[]>([]);
   const [plan, setPlan] = useState<ProduksjonsPlan | null>(null);
+  const [planElementer, setPlanElementer] = useState<PlanElement[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -39,12 +40,22 @@ export const useProductionData = (id: string | undefined) => {
         setBemanning(bemanningData.bemanning);
         setTalentBehov(bemanningData.talentBehov || []);
         
+        // Hent plan-elementer for produksjonen
+        try {
+          const planElementerData = await produksjonAPI.getPlanElementer(parseInt(id));
+          setPlanElementer(planElementerData.planElementer || []);
+        } catch (err) {
+          console.error('Kunne ikke hente plan-elementer:', err);
+          setPlanElementer([]);
+        }
+        
+        // Hent overordnet produksjonsplan hvis den finnes
         if (prodData.produksjon.plan_id) {
           try {
             const planData = await produksjonAPI.getPlan(prodData.produksjon.plan_id);
             setPlan(planData.plan);
           } catch (err) {
-            console.error('Kunne ikke hente plan:', err);
+            console.error('Kunne ikke hente produksjonsplan:', err);
           }
         }
       } catch (err: any) {
@@ -82,6 +93,7 @@ export const useProductionData = (id: string | undefined) => {
     bemanning,
     talentBehov,
     plan,
+    planElementer,
     loading,
     error,
     bemanningStats,

@@ -25,6 +25,9 @@ const validate = (req, res, next) => {
 // Horizontal access control: Only admin or the user themselves can view their productions
 router.get('/bruker/:userId', authenticateToken, checkResourceOwnership('userId', 'user-productions'), controller.getByUserId);
 
+// Hent plan-elementer for produksjon
+router.get('/:id/plan', authenticateToken, controller.getPlanElementer);
+
 // Hent produksjon med ID
 router.get('/:id', authenticateToken, controller.get);
 

@@ -253,6 +253,7 @@ GET    /api/produksjon/kategorier/:id/komplett-mal                  # Hent plan,
 # Produksjoner
 GET    /api/produksjon                         # Liste produksjoner
 GET    /api/produksjon/:id                     # Hent produksjon
+GET    /api/produksjon/:id/plan                # Hent plan-elementer for produksjon (overskrifter og hendelser)
 POST   /api/produksjon                         # Opprett produksjon (kan motta kategoriId kun for å kopiere mal/plassering; lagres ikke)
 PUT    /api/produksjon/:id                     # Oppdater produksjon
 DELETE /api/produksjon/:id                     # Slett produksjon

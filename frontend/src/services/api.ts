@@ -158,6 +158,18 @@ export interface ProduksjonsPlan {
   updated_at: string;
 }
 
+export interface PlanElement {
+  id: number;
+  produksjon_id: number;
+  type: 'overskrift' | 'hendelse';
+  navn: string;
+  varighet_minutter?: number;
+  parent_id?: number;
+  rekkefølge: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface TalentKategori {
   id: number;
   navn: string;
@@ -239,6 +251,11 @@ export const produksjonAPI = {
 
   getPlan: async (id: number): Promise<{ plan: ProduksjonsPlan }> => {
     const response = await api.get(`/produksjon/planer/${id}`);
+    return response.data;
+  },
+
+  getPlanElementer: async (produksjonId: number): Promise<{ planElementer: PlanElement[] }> => {
+    const response = await api.get(`/produksjon/${produksjonId}/plan`);
     return response.data;
   },
 

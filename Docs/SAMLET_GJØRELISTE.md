@@ -260,7 +260,11 @@
 - ⏳ SEC-009: CSRF token validation - infrastruktur klar (tester + package)
 - ✅ Steg 16: Input-validering audit - 100% coverage på alle endpoints
 - ✅ Steg 12: Dokumentasjon fullført (SECURITY.md, audit-rapporter)
-- ✅ 130/130 backend-tester passerer
+- ✅ **BUGFIX:** Plan-elementer vises nå korrekt i frontend
+  - Nytt API endpoint: GET /api/produksjon/:id/plan
+  - Frontend henter nå plan-elementer (ikke produksjonsplan)
+  - Hierarkisk visning: overskrifter → hendelser med varighet
+- ✅ 134/134 backend-tester passerer (+4 nye tester)
 - ✅ Frontend bygger perfekt
 - ✅ 3 nye audit-rapporter: SQL_INJECTION_REVIEW.md, INPUT_VALIDATION_AUDIT.md
 

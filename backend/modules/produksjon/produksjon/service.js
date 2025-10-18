@@ -233,6 +233,34 @@ const remove = async (id) => {
 };
 
 /**
+ * Finn plan-elementer for en produksjon
+ * Returnerer overskrifter og hendelser i hierarkisk rekkefølge
+ */
+const findPlanElementerByProduksjonId = async (produksjonId) => {
+  const result = await db.query(
+    `SELECT 
+      id,
+      produksjon_id,
+      type,
+      navn,
+      varighet_minutter,
+      parent_id,
+      rekkefølge,
+      created_at,
+      updated_at
+    FROM produksjon_plan_element
+    WHERE produksjon_id = $1
+    ORDER BY 
+      COALESCE(parent_id, id),
+      parent_id NULLS FIRST,
+      rekkefølge,
+      id`,
+    [produksjonId]
+  );
+  return result.rows;
+};
+
+/**
  * Finn produksjoner for en bruker
  */
 const findByUserId = async (userId) => {
@@ -283,6 +311,7 @@ const findTalentBehovByProduksjonId = async (produksjonId) => {
 module.exports = {
   findAll,
   findById,
+  findPlanElementerByProduksjonId,
   create,
   update,
   remove,

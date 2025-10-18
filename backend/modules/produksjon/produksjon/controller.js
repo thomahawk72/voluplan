@@ -124,9 +124,26 @@ const getByUserId = async (req, res) => {
   }
 };
 
+/**
+ * GET /api/produksjon/:id/plan
+ * Hent plan-elementer for en produksjon
+ */
+const getPlanElementer = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const planElementer = await service.findPlanElementerByProduksjonId(id);
+    
+    res.json({ planElementer });
+  } catch (error) {
+    console.error('[PRODUKSJON] Get plan-elementer error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 module.exports = {
   list,
   get,
+  getPlanElementer,
   create,
   update,
   remove,

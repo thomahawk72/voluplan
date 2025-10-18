@@ -28,6 +28,7 @@ const ProductionDetail: React.FC = () => {
     bemanning,
     talentBehov,
     plan,
+    planElementer,
     loading,
     error,
     bemanningStats,
@@ -140,6 +141,7 @@ const ProductionDetail: React.FC = () => {
         <PlanCard
           visible={visPlan}
           plan={plan}
+          planElementer={planElementer}
           produksjon={produksjon}
         />
 

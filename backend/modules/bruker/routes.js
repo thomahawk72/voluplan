@@ -215,11 +215,13 @@ router.delete(
 /**
  * POST /api/users/bulk-delete
  * Slett flere brukere (kun admin)
+ * Rate limited: 20 requests per 15 min (expensive operation)
  */
 router.post(
   '/users/bulk-delete',
   authenticateToken,
   requireRole(['admin']),
+  createMutationLimiter(), // Protect expensive bulk operation
   [
     body('userIds').isArray().withMessage('userIds må være en array'),
     body('userIds.*').isInt().withMessage('Alle user IDs må være tall'),

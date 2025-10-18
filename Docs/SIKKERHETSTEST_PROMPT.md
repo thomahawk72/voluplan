@@ -149,3 +149,4 @@ Lag TODO-liste for tracking, og lever kontinuerlig oppdateringer.
 - **TODO-liste**: Prioriterte oppgaver som må gjøres
 - **Kodeendringer**: Konkrete fixes for kritiske sårbarheter
 
+

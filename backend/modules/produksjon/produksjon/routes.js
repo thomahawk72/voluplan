@@ -8,6 +8,7 @@ const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const controller = require('./controller');
 const { authenticateToken, requireRole, checkResourceOwnership } = require('../../../shared/middleware/auth');
+const { createMutationLimiter } = require('../../../shared/middleware/rateLimiter');
 
 /**
  * Middleware for validering
@@ -31,7 +32,8 @@ router.get('/:id', authenticateToken, controller.get);
 router.get('/', authenticateToken, controller.list);
 
 // Opprett ny produksjon
-router.post('/', authenticateToken, requireRole(['admin']), [
+// Rate limited: 20 requests per 15 min (expensive operation with category template copying)
+router.post('/', authenticateToken, requireRole(['admin']), createMutationLimiter(), [
   body('navn').trim().notEmpty(),
   body('tid').isISO8601(),
   // kategoriId brukes kun ved oppretting for å kopiere mal/plassering, ikke lagres

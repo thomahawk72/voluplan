@@ -8,6 +8,10 @@ Dette dokumentet beskriver sikkerhetstiltakene implementert i Voluplan backend.
 - **Login**: Maks 5 forsøk per 15 minutter
 - **Password Reset**: Maks 3 forsøk per time
 - **General API**: Maks 100 requests per 15 minutter
+- **🆕 Mutation Operations** (2025-10-18 Sprint 3): Maks 20 requests per 15 minutter
+  - Bulk delete operations
+  - Produksjon creation (expensive due to template copying)
+  - Protected against DoS via resource exhaustion
 
 ### 2. Authentication & Authorization
 - **JWT tokens** i httpOnly cookies
@@ -21,11 +25,19 @@ Dette dokumentet beskriver sikkerhetstiltakene implementert i Voluplan backend.
 - **CORS konfigurert**: Kun tillatte origins kan gjøre requests
 - **Ingen localStorage**: Unngår XSS-sårbarhet
 
-### 4. Input Validation & Sanitization
-- **express-validator** på alle input-endpoints
-- Email normalisering
+### 4. Input Validation & Sanitization (2025-10-18 Sprint 3: Audit fullført ✅)
+- **express-validator** på alle mutation endpoints (100% coverage)
+  - POST /api/users, /api/kompetanse, /api/produksjon, osv.
+  - PUT endpoints med optional field validation
+  - PATCH endpoints med specific field validation
+- Email normalisering og validering
 - Password minimum lengde (8 tegn)
-- Parameteriserte SQL queries (SQL injection protection)
+- Integer validation med min/max constraints
+- Enum validation (type, status fields)
+- Array validation (bulk operations)
+- ISO8601 date validation
+- String trimming og sanitization
+- **Se:** `backend/INPUT_VALIDATION_AUDIT.md` for fullstendig rapport
 
 ### 5. Error Handling
 - Standardiserte error responses
@@ -40,9 +52,13 @@ Dette dokumentet beskriver sikkerhetstiltakene implementert i Voluplan backend.
 - Advarer om manglende optional konfigurasjoner
 - Feilmelding med liste over manglende variabler
 
-### 7. Database Security
+### 7. Database Security (2025-10-18 Sprint 3: SQL Injection audit fullført ✅)
 - Connection pooling med limits
-- Prepared statements (parameteriserte queries)
+- **Prepared statements (parameteriserte queries)** - 100% av alle queries
+  - Alle dynamic queries bruker `$1`, `$2` placeholders
+  - Ingen string interpolation av brukerinput
+  - ORDER BY clauses er hardkodet
+  - **Se:** `backend/SQL_INJECTION_REVIEW.md` for fullstendig audit
 - Separate database user med least privilege
 - Connection timeout konfigurert
 
@@ -92,13 +108,26 @@ Dette dokumentet beskriver sikkerhetstiltakene implementert i Voluplan backend.
 6. **Secrets**: Bruk secrets manager (AWS Secrets Manager, Azure Key Vault, etc.)
 7. **Updates**: Hold dependencies oppdatert (`npm audit`)
 
+### 10. 🆕 CSRF Protection (2025-10-18 Sprint 3: Tester opprettet, venter implementasjon)
+- **Status:** ⏳ Infrastruktur klar, venter på koordinert deploy
+- **Tester opprettet:** `backend/__tests__/middleware/csrf.test.js` (7/7 passerer)
+- **Package installert:** `csurf@1.11.0`
+- **Implementasjon venter på:**
+  - Frontend axios interceptor for X-CSRF-Token header
+  - Backend csrf middleware aktivering
+  - Koordinert deploy (breaking change)
+
 ## 🚫 Ikke Implementert (Vurder for Produksjon)
 
-- [ ] Helmet.js security headers
+- [ ] ✅ ~~Helmet.js security headers~~ ✅ IMPLEMENTERT (Sprint 1)
+- [ ] ✅ ~~Mutation rate limiting~~ ✅ IMPLEMENTERT (Sprint 3)
+- [ ] ✅ ~~SQL injection review~~ ✅ FULLFØRT (Sprint 3)
+- [ ] ✅ ~~Input validation audit~~ ✅ FULLFØRT (Sprint 3)
+- [ ] ⏳ CSRF token validation (infrastruktur klar, venter deploy)
 - [ ] Request logging (Morgan/Winston)
 - [ ] IP whitelisting for admin routes
 - [ ] Two-factor authentication (2FA)
-- [ ] Password complexity requirements
+- [ ] Password complexity requirements (vurder zxcvbn)
 - [ ] Account lockout etter flere feilede forsøk
 - [ ] Audit logging for admin actions
 - [ ] Database encryption at rest

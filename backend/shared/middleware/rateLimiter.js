@@ -60,10 +60,29 @@ const createGeneralLimiter = () => {
   });
 };
 
+/**
+ * Rate limiter for expensive mutation operations (POST/PUT/DELETE)
+ * Used for bulk operations and resource-intensive endpoints
+ */
+const createMutationLimiter = () => {
+  const windowMs = toInt(process.env.MUTATION_RATE_WINDOW_MS, 15 * 60 * 1000); // 15 minutter
+  const max = toInt(process.env.MUTATION_RATE_MAX, process.env.NODE_ENV === 'development' ? 1000 : 20); // Maks 20 mutations per 15 min
+
+  return rateLimit({
+    windowMs,
+    max,
+    message: { error: 'For mange endringer. Vennligst vent litt før du prøver igjen.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: ipKeyGenerator,
+  });
+};
+
 module.exports = {
   createLoginLimiter,
   createPasswordResetLimiter,
   createGeneralLimiter,
+  createMutationLimiter,
 };
 
 

@@ -5,8 +5,6 @@ import {
   Container,
   Typography,
   Paper,
-  AppBar,
-  Toolbar,
   IconButton,
   Card,
   CardContent,
@@ -17,7 +15,6 @@ import {
 } from '@mui/material';
 import {
   ArrowBack,
-  Settings as SettingsIcon,
   Category,
   People,
   TheaterComedy,
@@ -30,6 +27,7 @@ import TalentDialog from '../components/settings/TalentDialog';
 import UserManagement from '../components/settings/UserManagement';
 import ConfirmDeleteTalentDialog from '../components/settings/ConfirmDeleteTalentDialog';
 import ProduksjonsKategoriMal from '../components/settings/ProduksjonsKategoriMal';
+import AppHeader from '../components/layout/AppHeader';
 
 const Settings: React.FC = () => {
   const navigate = useNavigate();
@@ -201,19 +199,8 @@ const Settings: React.FC = () => {
   };
 
   return (
-    <Box sx={{ bgcolor: '#f5f7fa', minHeight: '100vh', pb: 4 }}>
-      {/* Header */}
-      <AppBar position="static" elevation={0}>
-        <Toolbar>
-          <IconButton edge="start" color="inherit" onClick={() => navigate('/dashboard')}>
-            <ArrowBack />
-          </IconButton>
-          <SettingsIcon sx={{ ml: 2, mr: 1 }} />
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            Innstillinger
-          </Typography>
-        </Toolbar>
-      </AppBar>
+    <Box sx={{ flexGrow: 1, backgroundColor: '#f5f5f5', minHeight: '100vh' }}>
+      <AppHeader />
 
       <Container maxWidth="xl" sx={{ mt: 4 }}>
         {error && (

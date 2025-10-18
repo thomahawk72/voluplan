@@ -691,14 +691,29 @@ frontend/src/
 ## Frontend Sider
 
 ### Dashboard (`/dashboard`)
-- Oversikt over kommende og gjennomførte produksjoner
+- **Produksjoner panel** med to filtre:
+  - **Tidsfilter**: Fremtidige / Tidligere produksjoner
+  - **Publisert-filter**: Alle / Publisert / Upublisert
+- **Hovedmeny** med rask tilgang til:
+  - Talenter (settings tab 0)
+  - Produksjonstyper (settings tab 1)  
+  - Brukere (settings tab 2)
 - Navigasjon til produksjonsdetaljer
-- Tilgang til innstillinger og profil
+- Opprett ny produksjon
+- Brukerprofilmeny (profil, innstillinger, logg ut)
 
 ### Produksjonsdetalj (`/produksjon/:id`)
 - Detaljert visning av én produksjon
-- Medarbeider-liste (gruppert etter talent-kategori)
-- Produksjonsplan og oppmøtetider
+- **Editerbar produksjonsinformasjon**: navn, dato, tid, plassering, beskrivelse
+- **Medarbeider-liste** (gruppert etter talent-kategori)
+  - Vis talent-behov vs tildelte personer
+  - Legg til/fjern personer
+  - Status-tracking (bekreftet, planlagt, avlyst)
+- **Produksjonsplan** (overskrifter og hendelser med varighet)
+  - Hentes fra `produksjon_plan_element` (kopieres fra kategori-mal)
+  - Hierarkisk visning: overskrifter → hendelser
+  - Viser varighet per hendelse
+- **Oppmøtetider** (kommer snart)
 - Statistikk (bekreftet, ikke svart, avslått)
 
 ### Innstillinger (`/settings`)

@@ -3,9 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
   Container,
-  Paper,
-  AppBar,
-  Toolbar,
   IconButton,
   CircularProgress,
   Alert,
@@ -18,6 +15,7 @@ import { useProductionData } from '../hooks/useProductionData';
 import ProductionHeader from '../components/production/ProductionHeader';
 import EmployeeCard from '../components/production/EmployeeCard';
 import PlanCard from '../components/production/PlanCard';
+import AppHeader from '../components/layout/AppHeader';
 
 const ProductionDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -101,19 +99,11 @@ const ProductionDetail: React.FC = () => {
   }
 
   return (
-    <Box sx={{ bgcolor: '#f5f7fa', minHeight: '100vh', pb: 4 }}>
-      <AppBar position="static" elevation={0}>
-        <Toolbar>
-          <IconButton edge="start" color="inherit" onClick={() => navigate('/dashboard')}>
-            <ArrowBack />
-          </IconButton>
-          <Typography variant="h6" sx={{ ml: 2 }}>
-            Produksjonsdetaljer
-          </Typography>
-        </Toolbar>
-      </AppBar>
+    <Box sx={{ flexGrow: 1, backgroundColor: '#f5f5f5', minHeight: '100vh' }}>
+      <AppHeader />
 
       <Container maxWidth="lg" sx={{ mt: 4 }}>
+    
         <ProductionHeader
           produksjon={produksjon}
           bemanningStats={bemanningStats}
